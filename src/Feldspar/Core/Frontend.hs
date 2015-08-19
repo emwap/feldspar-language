@@ -69,6 +69,7 @@ module Feldspar.Core.Frontend
     , writeHtmlAST
     , showDecor
     , drawDecor
+    , writeHtmlDecor
     , eval
     , evalTarget
     , desugar
@@ -272,6 +273,10 @@ showDecor = Syntactic.showDecorWith show . reifyFeld defaultFeldOpts N32
 drawDecor :: SyntacticFeld a => a -> IO ()
 drawDecor = Syntactic.drawDecorWith show . reifyFeld defaultFeldOpts N32
 
+-- | Write the syntax tree decorated with type and size information to an HTML file with foldable nodes
+writeHtmlDecor :: SyntacticFeld a => FilePath -> a -> IO ()
+writeHtmlDecor file = Syntactic.writeHtmlDecorWith show file . reifyFeld defaultFeldOpts N32
+
 eval :: SyntacticFeld a => a -> Internal a
 eval = evalBind . reifyFeld defaultFeldOpts N32
 
@@ -355,4 +360,3 @@ nlz x = bitCount $ complement $ foldl go x $ takeWhile (P.< bitSize' x) $ P.map 
   where
     go b s = share b $ \b' -> b' .|. (b' .>>. value s)
       -- TODO share is probably not needed when observable sharing is implemented
-
