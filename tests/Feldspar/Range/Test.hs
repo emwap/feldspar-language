@@ -51,6 +51,7 @@ import Data.Bits
 import Data.Int
 import Data.Word
 import Data.Typeable
+import qualified Control.Foldl as L
 
 import Feldspar.Lattice
 
@@ -62,6 +63,9 @@ tests = [ testGroup "Range Int"    $ typedTestsSigned   "Int"    (undefined :: I
         , testGroup "Range Word32" $ typedTestsUnsigned "Word32" (undefined :: Word32)
         , testGroup "Range Int8, Range Int8"   $ typedTestsTwo "Int8, Int8"   (undefined :: Int8)  (undefined :: Int8)
         , testGroup "Range Word8, Range Word8" $ typedTestsTwo "Word8, Word8" (undefined :: Word8) (undefined :: Word8)
+        , testGroup "Expensive" [ testProperty "prop_rangeBitCount Word8"  $ prop_rangeBitCountBruteForce (undefined :: Word8)
+                                , testProperty "prop_rangeBitCount Word16" $ prop_rangeBitCountBruteForce (undefined :: Word16)
+                                ]
         ]
 
 typedTests name typ =
@@ -125,6 +129,7 @@ typedTests name typ =
 typedTestsUnsigned name typ = typedTests name typ ++
     [ testProperty (unwords ["prop_mulU"           , name]) (prop_mulU typ)
     , testProperty (unwords ["prop_subSat"         , name]) (prop_subSat typ)
+    , testProperty (unwords ["prop_rangeBitCount"  , name]) (prop_rangeBitCount typ)
     ]
 
 typedTestsSigned name typ = typedTests name typ ++
@@ -525,3 +530,21 @@ prop_rangeQuot1 t =
 --   Avoids division by zero and arithmetic overflow.
 divPre v1 v2 = v2 /= 0 && not (v1 == minBound && v2 == (-1))
 
+prop_rangeBitCount :: (BoundedInt t) => t -> Range t -> Bool
+prop_rangeBitCount t r@(Range l u) = and
+    [ r' `isSubRangeOf` Range 0 (fromIntegral (finiteBitSize (undefined `asTypeOf` t)))
+    , l' <= fromIntegral (popCount l) || l' <= fromIntegral (popCount u)
+    , u' >= fromIntegral (popCount l) || u' >= fromIntegral (popCount u)
+    ]
+  where r'@(Range l' u') = rangeBitCount r `asTypeOf` r
+
+-- This property enumerates all values in the range, so it is expensive for large types
+prop_rangeBitCountBruteForce :: (BoundedInt t) => t -> Range t -> Bool
+prop_rangeBitCountBruteForce t r@(Range l u) = and
+    [ fromIntegral l' == x
+    , fromIntegral u' == y
+    ]
+  where
+    Range x y = rangeBitCount r `asTypeOf` r
+    (Just l',Just u') = L.fold ((,) <$> L.minimum <*> L.maximum)
+                      $ map popCount $ enumFromTo (min l u) (max l u)

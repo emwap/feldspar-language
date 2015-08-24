@@ -193,6 +193,7 @@ test-suite range
   build-depends:
     feldspar-language,
     base,
+    foldl,
     random           >= 1   && < 2,
     QuickCheck       >= 2.7 && < 3,
     tasty            >= 0.3,

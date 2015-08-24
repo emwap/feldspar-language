@@ -176,6 +176,8 @@ instance SizeProp (BITS :|| Type)
 
     sizeProp (C' Complement) (WrapFull a :* Nil) = rangeComplement (infoSize a)
 
+    sizeProp (C' BitCount) (WrapFull a :* Nil) = rangeBitCount (infoSize a)
+
     sizeProp a@(C' _) args = sizePropDefault a args
 
 
