@@ -240,13 +240,11 @@ instance ( Cumulative dom
         | IntType{} <- infoType (getInfo a)
         , Just a' <- viewLiteral a
         , Just k <- log2 (fromIntegral a')
-        = do
-             constructFeatOpt opts (c' ShiftL) (b :* literalDecor (fromIntegral k) :* Nil)
-        | IntType{} <- infoType (getInfo b)
+        = constructFeatOpt opts (c' ShiftLU) (b :* literalDecor (fromIntegral k) :* Nil)
+        | IntType {} <- infoType (getInfo b)
         , Just b' <- viewLiteral b
         , Just k <- log2 (fromIntegral b')
-        = do
-             constructFeatOpt opts (c' ShiftL) (a :* literalDecor (fromIntegral k) :* Nil)
+        = constructFeatOpt opts (c' ShiftLU) (a :* literalDecor (fromIntegral k) :* Nil)
 
 
     constructFeatOpt opts s@(C' Mul) (a :* (op :$ b :$ c) :* Nil)
