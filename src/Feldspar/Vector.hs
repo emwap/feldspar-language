@@ -689,8 +689,8 @@ rotateVecR ix = reverse . rotateVecL ix . reverse
 
 -- | @replicate1 n a@ creates a one dimensional pull vector
 --    containing @n@ copies of @a@
-replicate1 :: Data Length -> a -> Pull DIM1 a
-replicate1 n a = Pull (const a) (Z :. n)
+replicate1 :: (Syntax a) => Data Length -> a -> Pull DIM1 a
+replicate1 n a = share a $ \b -> Pull (const b) (Z :. n)
 
 -- | A vector which enumerates numbers consecutively
 enumFromTo :: forall a. (Type a, Integral a)
