@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -97,6 +98,7 @@ import Test.QuickCheck
 
 import Data.Patch
 import Data.Tree.View
+import qualified Data.Map as Map
 
 import Language.Syntactic hiding
     (desugar, sugar, resugar, showAST, drawAST, writeHtmlAST, stringTree)
@@ -275,7 +277,14 @@ drawDecor = Syntactic.drawDecorWith show . reifyFeld defaultFeldOpts N32
 
 -- | Write the syntax tree decorated with type and size information to an HTML file with foldable nodes
 writeHtmlDecor :: SyntacticFeld a => FilePath -> a -> IO ()
-writeHtmlDecor file = Syntactic.writeHtmlDecorWith show file . reifyFeld defaultFeldOpts N32
+writeHtmlDecor file = Syntactic.writeHtmlDecorWith showInfo file . reifyFeld defaultFeldOpts N32
+  where
+    showInfo :: Show (Info b) => Info b -> String
+    showInfo Info{..} = unlines [ "Type: " ++ show infoType
+                                , "Size: " ++ show infoSize
+                                , "Vars: " ++ show (Map.keys infoVars)
+                                , "Src:  " ++ show infoSource
+                                ]
 
 eval :: SyntacticFeld a => a -> Internal a
 eval = evalBind . reifyFeld defaultFeldOpts N32
