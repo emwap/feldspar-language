@@ -320,6 +320,27 @@ constFold :: (Typed dom, EvalBind dom, (Literal :|| Type) :<: dom)
     => ASTF (Decor Info (dom :|| Typeable)) a
     -> ASTF (Decor Info (dom :|| Typeable)) a
 
+-- Return expression unchanged if it is a `Literal`
+constFold expr
+    | Just (C' (Literal _)) <- prjF expr
+    = expr
+constFold expr
+    | Just Dict <- typeDict expr
+    , info      <- getInfo expr
+    = let -- Replace with a literal if the range on the expression is a singleton
+          go e
+            | RangeSet sz <- infoRange info
+            , isSingleton sz
+            = Sym $! Decor info $  C' $ inj $ c' $ Literal $ lowerBound sz
+          -- Replace with a literal if the expression is closed
+          go e
+            | Map.null $ infoVars info   -- closed expression
+            , Right a   <- evalBindEither e
+            = Sym $! Decor info $ C' $ inj $ c' $ Literal a
+          go e = e
+      in go expr
+constFold expr = expr
+
 -- | Evaluate an AST and catch any exceptions
 evalBindEither
   :: (Constrained dom, Sat dom :< Typeable, EvalBind dom) =>
@@ -329,24 +350,6 @@ evalBindEither a = unsafePerformIO $ do
     return $ case e of
         Left msg -> Left (show (msg :: SomeException))
         Right a  -> Right a
-
--- Replace with a literal if the range on the expression is a singleton
-constFold expr
-    | Just Dict     <- typeDict expr
-    , info          <- getInfo expr
-    , RangeSet size <- infoRange info
-    , isSingleton size
-    = literalDecorSrc (infoSource info) $ lowerBound size
-
--- Replace with a literal if the expression is closed
-constFold expr
-    | Just Dict <- typeDict expr
-    , info      <- getInfo expr
-    , Map.null $ infoVars info   -- closed expression
-    , Right a   <- evalBindEither expr
-    = literalDecorSrc (infoSource info) a
-
-constFold expr = expr
 
 -- | Environment for optimization
 type Opt = Reader Env
