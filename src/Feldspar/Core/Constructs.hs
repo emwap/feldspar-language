@@ -87,9 +87,9 @@ import Feldspar.Core.Constructs.Tuple
 
 type FeldSymbols
     =   (Decor SourceInfo1 Identity :|| Type)
+    :+: (Literal    :|| Type)
     :+: (Condition  :|| Type)
     :+: (FFI        :|| Type)
-    :+: (Literal    :|| Type)
     :+: (Select     :|| Type)
     :+: (Tuple      :|| Type)
     :+: (Array      :|| Type)
