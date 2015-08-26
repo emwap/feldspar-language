@@ -58,6 +58,7 @@ module Feldspar.Core.Interpretation
     , viewLiteral
     , literal
     , literalDecor
+    , literalDecorSrc
     , constFold
     , SomeInfo (..)
     , SomeType (..)
