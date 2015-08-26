@@ -297,19 +297,19 @@ literal :: (Type a, (Literal :|| Type) :<: dom) =>
 literal a = Sym $ C' $ inj $ c' $ Literal a
 
 -- | Construct a 'Literal' decorated with 'Info'
-literalDecorSrc :: (Type a, (Literal :|| Type) :<: dom) =>
-    SourceInfo -> a -> ASTF (Decor Info (dom :|| Typeable)) a
-literalDecorSrc src a = Sym $ Decor
-    ((mkInfo (sizeOf a)) {infoSource = src})
-    (C' $ inj $ c' $ Literal a)
+literalDecorSrc :: (Type a, (Literal :|| Type) :<: dom)
+                => SourceInfo -> a -> ASTF (Decor Info (dom :|| Typeable)) a
+literalDecorSrc src a = Sym $ Decor (Info typeRep (sizeOf a) Map.empty src)
+                            $ C' $ inj $ c' $ Literal a
 
 c' :: (Type (DenResult sig)) => feature sig -> (feature :|| Type) sig
 c' = C'
 
 -- | Construct a 'Literal' decorated with 'Info'
-literalDecor :: (Type a, (Literal :|| Type) :<: dom) =>
-    a -> ASTF (Decor Info (dom :|| Typeable)) a
+literalDecor :: (Type a, (Literal :|| Type) :<: dom)
+             => a -> ASTF (Decor Info (dom :|| Typeable)) a
 literalDecor = literalDecorSrc ""
+{-# INLINE literalDecor #-}
   -- Note: This function could get the 'SourceInfo' from the environment and
   -- insert it in the 'infoSource' field. But then it needs to be monadic which
   -- makes optimizations uglier.
