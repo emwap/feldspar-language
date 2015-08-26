@@ -265,7 +265,6 @@ optZero :: ( Eq b, Num b
         => FeldOpts -> feature (a :-> (b :-> Full a))
         -> Args (AST (Decor Info (dom :|| Typeable))) (a :-> (b :-> Full a))
         -> Opt (AST (Decor Info (dom :|| Typeable)) (Full a))
-optZero opts f (a :* b :* Nil)
+optZero opts f args@(a :* b :* Nil)
     | Just 0 <- viewLiteral b = return a
-    | otherwise               = constructFeatUnOpt opts f (a :* b :* Nil)
-
+    | otherwise               = constructFeatUnOpt opts f args
