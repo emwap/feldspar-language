@@ -530,8 +530,8 @@ prop_rangeQuot1 t =
 --   Avoids division by zero and arithmetic overflow.
 divPre v1 v2 = v2 /= 0 && not (v1 == minBound && v2 == (-1))
 
-prop_rangeBitCount :: (BoundedInt t) => t -> Range t -> Bool
-prop_rangeBitCount t r@(Range l u) = and
+prop_rangeBitCount :: (Show t, BoundedInt t) => t -> NonEmptyRange t -> Bool
+prop_rangeBitCount t (NonEmptyRange (r@(Range l u))) = and
     [ r' `isSubRangeOf` Range 0 (fromIntegral (finiteBitSize (undefined `asTypeOf` t)))
     , l' <= fromIntegral (popCount l) || l' <= fromIntegral (popCount u)
     , u' >= fromIntegral (popCount l) || u' >= fromIntegral (popCount u)
@@ -539,12 +539,18 @@ prop_rangeBitCount t r@(Range l u) = and
   where r'@(Range l' u') = rangeBitCount r `asTypeOf` r
 
 -- This property enumerates all values in the range, so it is expensive for large types
-prop_rangeBitCountBruteForce :: (BoundedInt t) => t -> Range t -> Bool
+prop_rangeBitCountBruteForce :: (Show t, BoundedInt t) => t -> Range t -> Bool
 prop_rangeBitCountBruteForce t r@(Range l u) = and
     [ fromIntegral l' == x
     , fromIntegral u' == y
     ]
   where
     Range x y = rangeBitCount r `asTypeOf` r
+    Range l' u' = rangeBitCountBruteForce r `asTypeOf` r
+
+rangeBitCountBruteForce :: (BoundedInt a, BoundedInt b) => Range a -> Range b
+rangeBitCountBruteForce r | isEmpty r = emptyRange
+rangeBitCountBruteForce r@(Range l u) = range (fromIntegral l') (fromIntegral u')
+  where
     (Just l',Just u') = L.fold ((,) <$> L.minimum <*> L.maximum)
                       $ map popCount $ enumFromTo (min l u) (max l u)

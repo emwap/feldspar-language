@@ -656,23 +656,24 @@ rangeComplement :: (Bits a, BoundedInt a) => Range a -> Range a
 rangeComplement (Range l u) = range (complement l) (complement u)
 
 -- | Propagating range information through 'bitCount'
-rangeBitCount :: forall a b. (Bits a, BoundedInt a, BoundedInt b)
+rangeBitCount :: forall a b. (Show a, Bits a, BoundedInt a, BoundedInt b)
               => Range a -> Range b
 -- rangeBitCount (Range l u) = Range 0 $ fromIntegral bz
-rangeBitCount (Range l u) = mapMonotonic fromIntegral $ go bz
+rangeBitCount r | isEmpty r = emptyRange
+rangeBitCount r@(Range l u) = mapMonotonic fromIntegral $ go bz
   where
     bz = finiteBitSize l
-    go (-1) = mapMonotonic fromIntegral $ range (popCount l) (popCount u) -- l==u
+    go (-1) = range (popCount l) (popCount u) -- l==u
     go i = if testBit l i == testBit u i
            then go (i-1)
-           else let prefix = fromIntegral $ popCount (l `shiftR` i)
-                    mask = complement 0 `shiftL` i
+           else let mask = complement 0 `shiftL` i
                     l1 = l .&. mask
                     l2 = complementBit l1 i
                     u1 = u .&. mask .|. complement mask
                     u2 = complementBit u1 i
-                 in rangeUnion (range (popCount l1) (popCount u1))
-                               (range (popCount l2) (popCount u2))
+                    l3 = head $ filter (`inRange` r) [l1,l2,l]
+                    u3 = head $ filter (`inRange` r) [u1,u2,u]
+                 in range (popCount l3) (popCount u3)
 
 -- | Propagates range information through 'max'.
 rangeMax :: BoundedInt a => Range a -> Range a -> Range a
@@ -817,5 +818,3 @@ instance (BoundedInt a, BoundedInt b, BoundedInt c) =>
   fromInteger i = liftR (fromInteger i)
   abs           = mapR abs
   negate        = mapR negate
-
-
