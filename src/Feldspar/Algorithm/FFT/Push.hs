@@ -3,6 +3,8 @@
 
 module Feldspar.Algorithm.FFT.Push
   ( fft
+  , ifft
+  , fftCore
   , butterfly
   , twid
   , twids
@@ -55,9 +57,9 @@ butterfly :: (Syntax a, Num a)
 butterfly f ws = unhalve . zipWith f ws . uncurry zip . halve
 
 -- | Cooley-Tukey Radix-2 Decimation In Frequency Fast Fourier Transfrom
-fft :: (Syntax a, Num a)
-    => Pull DIM1 a -> Pull DIM1 a -> Pull DIM1 a
-fft ws vs = forLoop (ilog2 len) vs stage
+fftCore :: (Syntax a, Num a)
+        => Pull DIM1 a -> Pull DIM1 a -> Pull DIM1 a
+fftCore ws vs = forLoop (ilog2 len) vs stage
   where
     len = length vs
     stage s = withLen len
@@ -65,3 +67,6 @@ fft ws vs = forLoop (ilog2 len) vs stage
             . store
             . chnk (1 .<<. s) (len .>>. s) (butterfly dft2 (ixmap (.<<. s) ws))
 
+fft vs = fftCore (twids (length vs)) vs
+
+ifft vs = fftCore (itwids (length vs)) vs
