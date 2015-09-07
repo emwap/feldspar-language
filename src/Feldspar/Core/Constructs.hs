@@ -41,6 +41,10 @@
 
 module Feldspar.Core.Constructs where
 
+#if MIN_VERSION_base(4,7,0)
+import Data.Coerce
+#endif
+
 import Data.Typeable
 
 import Language.Syntactic
@@ -157,12 +161,18 @@ instance (InjectC sym FeldSymbols a, Typeable a) => InjectC sym FeldDomain a
     injC = FeldDomain . injC
 
 toFeld :: ASTF (HODomain FeldSymbols Typeable Type) a -> ASTF FeldDomain a
+#if MIN_VERSION_base(4,7,0)
+toFeld = coerce
+#else
 toFeld = fold $ appArgs . Sym . FeldDomain
-  -- TODO Use unsafeCoerce?
+#endif
 
 fromFeld :: ASTF FeldDomain a -> ASTF (HODomain FeldSymbols Typeable Type) a
+#if MIN_VERSION_base(4,7,0)
+fromFeld = coerce
+#else
 fromFeld = fold $ appArgs . Sym . getFeldDomain
-  -- TODO Use unsafeCoerce?
+#endif
 
 instance IsHODomain FeldDomain Typeable Type
   where
