@@ -1,6 +1,7 @@
 {-# LANGUAGE GADTs             #-}
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE FlexibleInstances #-}
+
 module Feldspar.Vector.Shape where
 
 import qualified Prelude as P
@@ -81,12 +82,22 @@ class Shapely sh where
   toShape   :: Int -> Data [Length] -> Shape sh
 
 instance Shapely Z where
+  {-# SPECIALIZE instance Shapely Z #-}
+  {-# INLINABLE zeroDim #-}
+  {-# INLINABLE unitDim #-}
+  {-# INLINABLE fakeShape #-}
+  {-# INLINABLE toShape #-}
   zeroDim   = Z
   unitDim   = Z
   fakeShape = Z
   toShape _ _ = Z
 
 instance Shapely sh => Shapely (sh :. Data Length) where
+  {-# SPECIALIZE instance (Shapely sh) => Shapely (sh :. Data Length) #-}
+  {-# INLINABLE zeroDim #-}
+  {-# INLINABLE unitDim #-}
+  {-# INLINABLE fakeShape #-}
+  {-# INLINABLE toShape #-}
   zeroDim   = zeroDim   :. 0
   unitDim   = unitDim   :. 1
   fakeShape = fakeShape :. P.error "You shall not inspect the syntax tree!"
@@ -107,6 +118,3 @@ peelLeft2 sh = (m, n, sh'')
 insLeft :: Data Length -> Shape sh -> Shape (sh :. Data Length)
 insLeft m Z = Z :. m
 insLeft m (sh :. n) = insLeft m sh :. n
-
-
-

@@ -42,4 +42,4 @@ foreignImport :: ( Type (DenResult a)
                  )
               => String -> Denotation a -> c
 foreignImport name f = sugarSymF (ForeignImport name f)
-
+{-# INLINABLE foreignImport #-}

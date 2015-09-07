@@ -67,6 +67,8 @@ data FLOATING a
 
 instance Semantic FLOATING
   where
+    {-# SPECIALIZE instance Semantic FLOATING #-}
+    {-# INLINABLE semantics #-}
     semantics Pi      = Sem "pi"      Prelude.pi
     semantics Exp     = Sem "exp"     Prelude.exp
     semantics Sqrt    = Sem "sqrt"    Prelude.sqrt
@@ -88,23 +90,29 @@ instance Semantic FLOATING
 
 semanticInstances ''FLOATING
 
-instance EvalBind FLOATING where evalBindSym = evalBindSymDefault
+instance EvalBind FLOATING where
+  {-# SPECIALIZE instance EvalBind FLOATING #-}
 
 instance AlphaEq dom dom dom env => AlphaEq FLOATING FLOATING dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq FLOATING FLOATING dom env #-}
 
-instance Sharable FLOATING
+instance Sharable FLOATING where {-# SPECIALIZE instance Sharable FLOATING #-}
 
-instance Cumulative FLOATING
+instance Cumulative FLOATING where {-# SPECIALIZE instance Cumulative FLOATING #-}
 
 instance SizeProp (FLOATING :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (FLOATING :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' s) = sizePropDefault s
 
 instance ( (FLOATING :|| Type) :<: dom
          , OptimizeSuper dom)
       => Optimize (FLOATING :|| Type) dom
   where
+    {-# SPECIALIZE instance ((FLOATING :|| Type) :<: dom, OptimizeSuper dom) =>
+          Optimize (FLOATING :|| Type) dom #-}
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts a@(C' _) = constructFeatUnOptDefault opts a
-

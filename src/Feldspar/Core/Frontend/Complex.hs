@@ -31,42 +31,52 @@ where
 
 import Data.Complex (Complex)
 
-import Feldspar.Core.Constructs
-import Feldspar.Core.Constructs.Complex
-import Feldspar.Core.Frontend.Num
+import Feldspar.Core.Constructs (Data,sugarSymF)
+import Feldspar.Core.Constructs.Complex (COMPLEX(..))
+import Feldspar.Core.Frontend.Num (Numeric)
 
 complex :: (Numeric a, RealFloat a) => Data a -> Data a -> Data (Complex a)
 complex = sugarSymF MkComplex
+{-# INLINABLE complex #-}
 
 realPart :: (Numeric a, RealFloat a) => Data (Complex a) -> Data a
 realPart = sugarSymF RealPart
+{-# INLINABLE realPart #-}
 
 imagPart :: (Numeric a, RealFloat a) => Data (Complex a) -> Data a
 imagPart = sugarSymF ImagPart
+{-# INLINABLE imagPart #-}
 
 conjugate :: (Numeric a, RealFloat a) => Data (Complex a) -> Data (Complex a)
 conjugate = sugarSymF Conjugate
+{-# INLINABLE conjugate #-}
 
 mkPolar :: (Numeric a, RealFloat a) => Data a -> Data a -> Data (Complex a)
 mkPolar = sugarSymF MkPolar
+{-# INLINABLE mkPolar #-}
 
 cis :: (Numeric a, RealFloat a) => Data a -> Data (Complex a)
 cis = sugarSymF Cis
+{-# INLINABLE cis #-}
 
 magnitude :: (Numeric a, RealFloat a) => Data (Complex a) -> Data a
 magnitude = sugarSymF Magnitude
+{-# INLINABLE magnitude #-}
 
 phase :: (Numeric a, RealFloat a) => Data (Complex a) -> Data a
 phase = sugarSymF Phase
+{-# INLINABLE phase #-}
 
 polar :: (Numeric a, RealFloat a) => Data (Complex a) -> (Data a, Data a)
 polar c = (magnitude c, phase c)
+{-# INLINABLE polar #-}
 
 infixl 6 +.
 
 (+.) :: (Numeric a, RealFloat a) => Data a -> Data a -> Data (Complex a)
 (+.) = complex
+{-# INLINABLE (+.) #-}
 
 iunit :: (Numeric a, RealFloat a) => Data (Complex a)
 iunit = 0 +. 1
-
+{-# INLINABLE iunit #-}

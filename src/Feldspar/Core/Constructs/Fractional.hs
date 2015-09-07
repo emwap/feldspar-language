@@ -51,29 +51,39 @@ data FRACTIONAL a
 
 instance Semantic FRACTIONAL
   where
+    {-# SPECIALIZE instance Semantic FRACTIONAL #-}
+    {-# INLINABLE semantics #-}
     semantics DivFrac = Sem "(/)" (/)
 
 semanticInstances ''FRACTIONAL
 
-instance EvalBind FRACTIONAL where evalBindSym = evalBindSymDefault
+instance EvalBind FRACTIONAL where
+  {-# SPECIALIZE instance EvalBind FRACTIONAL #-}
 
 instance SizeProp (FRACTIONAL :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (FRACTIONAL :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' s) = sizePropDefault s
 
-instance Sharable FRACTIONAL
+instance Sharable FRACTIONAL where {-# SPECIALIZE instance Sharable FRACTIONAL #-}
 
-instance Cumulative FRACTIONAL
+instance Cumulative FRACTIONAL where {-# SPECIALIZE instance Cumulative FRACTIONAL #-}
 
 instance AlphaEq dom dom dom env => AlphaEq FRACTIONAL FRACTIONAL dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq FRACTIONAL FRACTIONAL dom env #-}
 
 instance ( (FRACTIONAL :|| Type) :<: dom
          , (NUM :|| Type) :<: dom
          , OptimizeSuper dom)
       => Optimize (FRACTIONAL :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (FRACTIONAL :|| Type) :<: dom
+                            , (NUM :|| Type) :<: dom
+                            , OptimizeSuper dom)
+                         => Optimize (FRACTIONAL :|| Type) dom #-}
     constructFeatOpt _ (C' DivFrac) (a :* b :* Nil)
         | Just 1 <- viewLiteral b = return a
         | alphaEq a b = return $ literalDecor 1
@@ -91,4 +101,4 @@ instance ( (FRACTIONAL :|| Type) :<: dom
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-
+    {-# INLINABLE constructFeatUnOpt #-}

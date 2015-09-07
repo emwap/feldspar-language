@@ -63,6 +63,8 @@ data ORD a
 
 instance Semantic ORD
   where
+    {-# SPECIALIZE instance Semantic ORD #-}
+    {-# INLINABLE semantics #-}
     semantics LTH = Sem "(<)"  (<)
     semantics GTH = Sem "(>)"  (>)
     semantics LTE = Sem "(<=)" (<=)
@@ -72,18 +74,22 @@ instance Semantic ORD
 
 semanticInstances ''ORD
 
-instance EvalBind ORD where evalBindSym = evalBindSymDefault
+instance EvalBind ORD where
+  {-# SPECIALIZE instance EvalBind ORD #-}
 
 instance AlphaEq dom dom dom env => AlphaEq ORD ORD dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq ORD ORD dom env #-}
 
-instance Sharable ORD
+instance Sharable ORD where {-# SPECIALIZE instance Sharable ORD #-}
 
-instance Cumulative ORD
+instance Cumulative ORD where {-# SPECIALIZE instance Cumulative ORD #-}
 
 instance SizeProp (ORD :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (ORD :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' Min) (WrapFull a :* WrapFull b :* Nil) = min (infoSize a) (infoSize b)
     sizeProp (C' Max) (WrapFull a :* WrapFull b :* Nil) = max (infoSize a) (infoSize b)
     sizeProp a@(C' _) args = sizePropDefault a args
@@ -95,6 +101,11 @@ instance ( (ORD :|| Type) :<: dom
          )
       => Optimize (ORD :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (ORD :|| Type) :<: dom
+                            , Cumulative dom
+                            , OptimizeSuper dom
+                            )
+                         => Optimize (ORD :|| Type) dom #-}
     constructFeatOpt _ (C' LTH) (a :* b :* Nil)
         | RangeSet ra <- infoRange (getInfo a)
         , RangeSet rb <- infoRange (getInfo b)
@@ -218,4 +229,4 @@ instance ( (ORD :|| Type) :<: dom
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-
+    {-# INLINABLE constructFeatUnOpt #-}

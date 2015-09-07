@@ -49,34 +49,42 @@ data FUTURE a where
 
 instance Semantic FUTURE
   where
+    {-# SPECIALIZE instance Semantic FUTURE #-}
+    {-# INLINABLE semantics #-}
     semantics MkFuture = Sem "future" FVal
     semantics Await    = Sem "await"  unFVal
 
 semanticInstances ''FUTURE
 
-instance EvalBind FUTURE where evalBindSym = evalBindSymDefault
+instance EvalBind FUTURE where
+  {-# SPECIALIZE instance EvalBind FUTURE #-}
 
 instance AlphaEq dom dom dom env => AlphaEq FUTURE FUTURE dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq FUTURE FUTURE dom env #-}
 
 instance Sharable FUTURE
   where
+    {-# SPECIALIZE instance Sharable FUTURE #-}
+    {-# INLINABLE hoistOver #-}
     hoistOver MkFuture = False
     hoistOver _        = True
 
-instance Cumulative FUTURE
+instance Cumulative FUTURE where {-# SPECIALIZE instance Cumulative FUTURE #-}
 
 instance SizeProp (FUTURE :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (FUTURE :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' MkFuture) (WrapFull a :* Nil) = infoSize a
     sizeProp (C' Await)    (WrapFull a :* Nil) = infoSize a
 
-instance ( (FUTURE :|| Type) :<: dom
-         , OptimizeSuper dom
-         )
+instance ((FUTURE :|| Type) :<: dom, OptimizeSuper dom)
       => Optimize (FUTURE :|| Type) dom
   where
+    {-# SPECIALIZE instance ((FUTURE :|| Type) :<: dom, OptimizeSuper dom)
+          => Optimize (FUTURE :|| Type) dom #-}
     constructFeatOpt _ (C' Await) ((op :$ a) :* Nil)
       | Just (C' MkFuture) <- prjF op
       = return a
@@ -86,6 +94,7 @@ instance ( (FUTURE :|| Type) :<: dom
       = return a
 
     constructFeatOpt opts feature args = constructFeatUnOpt opts feature args
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-
+    {-# INLINABLE constructFeatUnOpt #-}

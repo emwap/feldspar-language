@@ -6,6 +6,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -113,7 +114,8 @@ import Feldspar.Core.Interpretation.Typed
 -- width
 targetSpecialization :: BitWidth n -> ASTF dom a -> ASTF dom a
 -- TODO targetSpecialization :: BitWidth n -> ASTF dom a -> ASTF dom (TargetType n a)
-targetSpecialization _ = id
+targetSpecialization = const id
+{-# INLINABLE targetSpecialization #-}
 
 
 
@@ -125,38 +127,54 @@ targetSpecialization _ = id
 class Sharable dom
   where
     sharable :: dom a -> Bool
-    sharable _ = True
+    sharable = const True
+    {-# INLINABLE sharable #-}
 
     hoistOver :: dom a -> Bool
-    hoistOver _ = True
+    hoistOver = const True
+    {-# INLINABLE hoistOver #-}
+
 
 instance (Sharable sub1, Sharable sub2) => Sharable (sub1 :+: sub2)
   where
+    {-# SPECIALIZE instance (Sharable sub1, Sharable sub2) => Sharable (sub1 :+: sub2) #-}
+    {-# INLINABLE sharable #-}
     sharable (InjL a) = sharable a
     sharable (InjR a) = sharable a
 
     hoistOver (InjL a) = hoistOver a
     hoistOver (InjR a) = hoistOver a
+    {-# INLINABLE hoistOver #-}
 
 instance Sharable sym => Sharable (sym :|| pred)
   where
+    {-# SPECIALIZE instance (Sharable sym) => Sharable (sym :|| pred) #-}
     sharable (C' s) = sharable s
+    {-# INLINABLE sharable #-}
 
     hoistOver (C' s) = hoistOver s
+    {-# INLINABLE hoistOver #-}
 
 instance Sharable sym => Sharable (SubConstr2 c sym p1 p2)
   where
+    {-# SPECIALIZE instance (Sharable sym) => Sharable (SubConstr2 c sym p1 p2) #-}
     sharable (SubConstr2 s) = sharable s
+    {-# INLINABLE sharable #-}
 
     hoistOver (SubConstr2 s) = hoistOver s
+    {-# INLINABLE hoistOver #-}
 
 instance Sharable dom => Sharable (Decor Info dom)
   where
+    {-# SPECIALIZE instance (Sharable dom) => Sharable (Decor Info dom) #-}
     sharable = sharable . decorExpr
+    {-# INLINABLE sharable #-}
 
     hoistOver = hoistOver . decorExpr
+    {-# INLINABLE hoistOver #-}
 
-instance Sharable Empty
+instance Sharable Empty where
+  {-# SPECIALIZE instance Sharable Empty #-}
 
 
 
@@ -169,11 +187,16 @@ class SizeProp feature
   where
     -- | Size propagation for a symbol given a list of argument sizes
     sizeProp :: feature a -> Args (WrapFull Info) a -> Size (DenResult a)
+    {-# INLINABLE sizeProp #-}
+    default sizeProp :: (Type (DenResult a))
+                     => feature a -> Args (WrapFull Info) a -> Size (DenResult a)
+    sizeProp = sizePropDefault
 
 -- | Convenient default implementation of 'sizeProp'
 sizePropDefault :: (Type (DenResult a))
                 => feature a -> Args (WrapFull Info) a -> Size (DenResult a)
-sizePropDefault _ _ = universal
+sizePropDefault = const (const universal)
+{-# INLINABLE sizePropDefault #-}
 
 --------------------------------------------------------------------------------
 -- * Optimization and type/size inference
@@ -181,7 +204,8 @@ sizePropDefault _ _ = universal
 
 -- | Compute a type representation of a symbol's result type
 resultType :: Type (DenResult a) => c a -> TypeRep (DenResult a)
-resultType _ = typeRep
+resultType = const typeRep
+{-# INLINABLE resultType #-}
 
 data SomeType
   where
@@ -218,14 +242,17 @@ instance Show (Info a)
 
 mkInfo :: Type a => Size a -> Info a
 mkInfo sz = Info typeRep sz Map.empty ""
+{-# INLINABLE mkInfo #-}
 
 mkInfoTy :: (Show (Size a), Lattice (Size a)) => TypeRep a -> Info a
 mkInfoTy t = Info t universal Map.empty ""
+{-# INLINABLE mkInfoTy #-}
 
 infoRange :: Info a -> RangeSet a
 infoRange info = case infoType info of
                    IntType _ _ -> RangeSet $ infoSize info
                    _           -> Universal
+{-# INLINABLE infoRange #-}
 
 -- | This class is used to allow constructs to be abstract in the monad. Its
 -- purpose is similar to that of 'MonadType'.
@@ -237,11 +264,11 @@ class LatticeSize1 m
 
 instance LatticeSize1 Mut
   where
-    mergeSize _ = (\/)
+    mergeSize = const (\/)
 
 instance LatticeSize1 Elements
   where
-    mergeSize _ = (\/)
+    mergeSize = const (\/)
 
 -- | 'Info' with hidden result type
 data SomeInfo
@@ -269,6 +296,7 @@ defaultFeldOpts = FeldOpts { targets = [] }
 -- | Decide whether a Target is enabled in FeldOpts.
 inTarget :: Target -> FeldOpts -> Bool
 inTarget t opts = t `elem` (targets opts)
+{-# INLINABLE inTarget #-}
 
 -- | Initial environment
 initEnv :: Env
@@ -287,9 +315,11 @@ viewLiteral :: forall info dom a. ((Literal :|| Type) :<: dom)
             => ASTF (Decor info (dom :|| Typeable)) a -> Maybe a
 viewLiteral (prjF -> Just (C' (Literal a))) = Just a
 viewLiteral _ = Nothing
+{-# INLINABLE viewLiteral #-}
 
 prjF :: Project (sub :|| Type) sup => sup sig -> Maybe ((sub :|| Type) sig)
 prjF = prj
+{-# INLINABLE prjF #-}
 
 -- | Construct a 'Literal'
 literal :: (Type a, (Literal :|| Type) :<: dom) =>
@@ -301,15 +331,17 @@ literalDecorSrc :: (Type a, (Literal :|| Type) :<: dom)
                 => SourceInfo -> a -> ASTF (Decor Info (dom :|| Typeable)) a
 literalDecorSrc src a = Sym $ Decor (Info typeRep (sizeOf a) Map.empty src)
                             $ C' $ inj $ c' $ Literal a
+{-# INLINABLE literalDecorSrc #-}
 
 c' :: (Type (DenResult sig)) => feature sig -> (feature :|| Type) sig
 c' = C'
+{-# INLINABLE c' #-}
 
 -- | Construct a 'Literal' decorated with 'Info'
 literalDecor :: (Type a, (Literal :|| Type) :<: dom)
              => a -> ASTF (Decor Info (dom :|| Typeable)) a
 literalDecor = literalDecorSrc ""
-{-# INLINE literalDecor #-}
+{-# INLINABLE literalDecor #-}
   -- Note: This function could get the 'SourceInfo' from the environment and
   -- insert it in the 'infoSource' field. But then it needs to be monadic which
   -- makes optimizations uglier.
@@ -324,21 +356,20 @@ constFold :: (Typed dom, EvalBind dom, (Literal :|| Type) :<: dom)
 constFold expr
     | Just (C' (Literal _)) <- prjF expr
     = expr
+-- Replace with a literal if the range on the expression is a singleton
 constFold expr
     | Just Dict <- typeDict expr
     , info      <- getInfo expr
-    = let -- Replace with a literal if the range on the expression is a singleton
-          go e
-            | RangeSet sz <- infoRange info
-            , isSingleton sz
-            = Sym $! Decor info $  C' $ inj $ c' $ Literal $ lowerBound sz
-          -- Replace with a literal if the expression is closed
-          go e
-            | Map.null $ infoVars info   -- closed expression
-            , Right a   <- evalBindEither e
-            = Sym $! Decor info $ C' $ inj $ c' $ Literal a
-          go e = e
-      in go expr
+    , RangeSet sz <- infoRange info
+    , isSingleton sz
+    = Sym $ Decor info $  C' $ inj $ c' $ Literal $ lowerBound sz
+-- Replace with a literal if the expression is closed
+constFold expr
+    | Just Dict <- typeDict expr
+    , info      <- getInfo expr
+    , Map.null $ infoVars info   -- closed expression
+    , Right a   <- evalBindEither expr
+    = Sym $ Decor info $ C' $ inj $ c' $ Literal a
 constFold expr = expr
 
 -- | Evaluate an AST and catch any exceptions
@@ -349,7 +380,7 @@ evalBindEither a = unsafePerformIO $ do
     e <- try $ return $! evalBind a
     return $ case e of
         Left msg -> Left (show (msg :: SomeException))
-        Right a  -> Right a
+        Right b  -> Right b
 
 -- | Environment for optimization
 type Opt = Reader Env
@@ -362,6 +393,18 @@ type Opt = Reader Env
 -- help optimization and optimization may help size inference.)
 class Optimize feature dom
   where
+    -- | Size Propagation in the presence of variables
+    sizePropEnv :: feature a
+                -> Args (AST (Decor Info (dom :|| Typeable))) a
+                -> Opt (Size (DenResult a))
+    {-# INLINABLE sizePropEnv #-}
+
+    default sizePropEnv :: (SizeProp feature)
+                        => feature a
+                        -> Args (AST (Decor Info (dom :|| Typeable))) a
+                        -> Opt (Size (DenResult a))
+    sizePropEnv feat args = return $ sizeProp feat $ mapArgs (WrapFull . getInfo) args
+
     -- | Top-down and bottom-up optimization of a feature
     optimizeFeat
         :: ( Typeable (DenResult a)
@@ -371,6 +414,7 @@ class Optimize feature dom
         -> Args (AST (dom :|| Typeable)) a
         -> Opt (ASTF (Decor Info (dom :|| Typeable)) (DenResult a))
     optimizeFeat = optimizeFeatDefault
+    {-# INLINABLE optimizeFeat #-}
 
     -- | Optimized construction of an expression from a symbol and its optimized
     -- arguments
@@ -383,6 +427,7 @@ class Optimize feature dom
         -> Args (AST (Decor Info (dom :|| Typeable))) a
         -> Opt (ASTF (Decor Info (dom :|| Typeable)) (DenResult a))
     constructFeatOpt = constructFeatUnOpt
+    {-# INLINABLE constructFeatOpt #-}
 
     -- | Unoptimized construction of an expression from a symbol and its
     -- optimized arguments
@@ -392,9 +437,22 @@ class Optimize feature dom
         -> Args (AST (Decor Info (dom :|| Typeable))) a
         -> Opt (ASTF (Decor Info (dom :|| Typeable)) (DenResult a))
 
+    default constructFeatUnOpt
+        :: ( Typeable (DenResult a)
+           , Type (DenResult a)
+           , SizeProp feature
+           , feature :<: dom)
+        => FeldOpts -> feature a
+        -> Args (AST (Decor Info (dom :|| Typeable))) a
+        -> Opt (ASTF (Decor Info (dom :|| Typeable)) (DenResult a))
+    constructFeatUnOpt = constructFeatUnOptDefault
+    {-# INLINABLE constructFeatUnOpt #-}
+
 instance Optimize Empty dom
   where
+    {-# SPECIALIZE instance Optimize Empty dom #-}
     constructFeatUnOpt = error "Not implemented: constructFeatUnOpt for Empty"
+    sizePropEnv = error "Not implemented: sizePropEnv for Empty"
 
 -- These classes used to be super-classes of `Optimize`, but after switching to
 -- GHC 7.4, that lead to looping dictionaries (at run time). The problem arises
@@ -439,7 +497,17 @@ instance
     , Constrained dom
     , Optimize dom dom
     ) =>
-      OptimizeSuper dom
+      OptimizeSuper dom where
+        {-# SPECIALIZE instance
+             ( AlphaEq dom dom (dom :|| Typeable) [(VarId,VarId)]
+             , AlphaEq dom dom (Decor Info (dom :|| Typeable)) [(VarId,VarId)]
+             , EvalBind dom
+             , (Literal :|| Type) :<: dom
+             , Typed dom
+             , Render dom
+             , Constrained dom
+             , Optimize dom dom
+             ) => OptimizeSuper dom #-}
 
 -- | Optimized construction of an expression from a symbol and its optimized
 -- arguments
@@ -449,15 +517,13 @@ constructFeat :: ( Typeable (DenResult a)
     -> Args (AST (Decor Info (dom :|| Typeable))) a
     -> Opt (ASTF (Decor Info (dom :|| Typeable)) (DenResult a))
 constructFeat opts a args = do
-    aUnOpt <- constructFeatUnOpt opts a args
-    aOpt   <- constructFeatOpt opts a args
-    return $ updateDecor
-        (\info -> info {infoSize = infoSize (getInfo aUnOpt)})
-        aOpt
+    sz   <- sizePropEnv a args
+    aOpt <- constructFeatOpt opts a args
+    return $ updateDecor (\info -> info {infoSize = sz}) aOpt
   -- This function uses `constructFeatOpt` for optimization and
-  -- `constructFeatUnOpt` for size propagation. This is because
+  -- `sizePropEnv` for size propagation. This is because
   -- `constructFeatOpt` may produce less accurate size information than
-  -- `constructFeatUnOpt`.
+  -- `sizePropEnv`.
 
 instance
     ( Optimize sub1 dom
@@ -465,14 +531,22 @@ instance
     ) =>
       Optimize (sub1 :+: sub2) dom
   where
+    {-# SPECIALIZE instance (Optimize sub1 dom, Optimize sub2 dom) => Optimize (sub1 :+: sub2) dom #-}
+    sizePropEnv (InjL a) = sizePropEnv a
+    sizePropEnv (InjR a) = sizePropEnv a
+    {-# INLINABLE sizePropEnv #-}
+
     optimizeFeat opts (InjL a) = optimizeFeat opts a
     optimizeFeat opts (InjR a) = optimizeFeat opts a
+    {-# INLINABLE optimizeFeat #-}
 
     constructFeatOpt opts (InjL a) = constructFeatOpt opts a
     constructFeatOpt opts (InjR a) = constructFeatOpt opts a
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts (InjL a) = constructFeatUnOpt opts a
     constructFeatUnOpt opts (InjR a) = constructFeatUnOpt opts a
+    {-# INLINABLE constructFeatUnOpt #-}
 
 -- | Optimization of an expression
 --
@@ -484,12 +558,14 @@ optimizeM :: (OptimizeSuper dom)
 optimizeM opts a
     | Dict <- exprDict a
     = constFold <$> matchTrans (\(C' x) -> optimizeFeat opts x) a
+{-# INLINABLE optimizeM #-}
 
 -- | Optimization of an expression. This function runs 'optimizeM' and extracts
 -- the result.
 optimize :: (OptimizeSuper dom)
          => FeldOpts -> ASTF (dom :|| Typeable) a -> ASTF (Decor Info (dom :|| Typeable)) a
 optimize opts = flip runReader initEnv . optimizeM opts
+{-# INLINABLE optimize #-}
 
 -- | Convenient default implementation of 'constructFeatUnOpt'. Uses 'sizeProp'
 -- to propagate size.
@@ -520,12 +596,8 @@ constructFeatUnOptDefault
     => FeldOpts -> feature a
     -> Args (AST (Decor Info (dom :|| Typeable))) a
     -> Opt (ASTF (Decor Info (dom :|| Typeable)) (DenResult a))
-constructFeatUnOptDefault _ feat args
-    = do
-        src <- asks sourceEnv
-        let sz   = sizeProp feat $ mapArgs (WrapFull . getInfo) args
-            vars = Map.unions $ listArgs (infoVars . getInfo) args
-        return $ appArgs (Sym $ Decor (Info typeRep sz vars src) $ C' $ inj feat) args
+constructFeatUnOptDefault = flip constructFeatUnOptDefaultTyp typeRep
+{-# INLINABLE constructFeatUnOptDefault #-}
 
 -- | Convenient default implementation of 'optimizeFeat'
 optimizeFeatDefault
@@ -538,6 +610,7 @@ optimizeFeatDefault
     -> Opt (ASTF (Decor Info (dom :|| Typeable)) (DenResult a))
 optimizeFeatDefault opts feat args
     = constructFeat opts feat =<< mapArgsM (optimizeM opts) args
+{-# INLINABLE optimizeFeatDefault #-}
 
 
 -- | The 'Cumulative' class captures the concept of functions that always increase or decrease their
@@ -550,7 +623,8 @@ class Cumulative feature where
     cumulativeInc :: feature a
               -> Args (AST (Decor Info (dom :|| Typeable))) a
               -> [ASTF (Decor Info (dom :|| Typeable)) (DenResult a)]
-    cumulativeInc _ _ = []
+    cumulativeInc = const (const [])
+    {-# INLINABLE cumulativeInc #-}
 
     -- | Return the arguments for which the symbol is monotonic decreasing
     --
@@ -559,27 +633,41 @@ class Cumulative feature where
     cumulativeDec :: feature a
                  -> Args (AST (Decor Info (dom :|| Typeable))) a
                  -> [ASTF (Decor Info (dom :|| Typeable)) (DenResult a)]
-    cumulativeDec _ _ = []
+    cumulativeDec = const (const [])
+    {-# INLINABLE cumulativeDec #-}
 
 instance (Cumulative sub1, Cumulative sub2) => Cumulative (sub1 :+: sub2) where
+    {-# SPECIALIZE instance (Cumulative sub1, Cumulative sub2) => Cumulative (sub1 :+: sub2) #-}
     cumulativeInc (InjL a) = cumulativeInc a
     cumulativeInc (InjR a) = cumulativeInc a
     cumulativeDec (InjL a) = cumulativeDec a
     cumulativeDec (InjR a) = cumulativeDec a
+    {-# INLINABLE cumulativeInc #-}
+    {-# INLINABLE cumulativeDec #-}
 
 instance (Cumulative sym) => Cumulative (sym :|| pred) where
+    {-# SPECIALIZE instance (Cumulative sym) => Cumulative (sym :|| pred) #-}
     cumulativeInc (C' s) = cumulativeInc s
     cumulativeDec (C' s) = cumulativeDec s
+    {-# INLINABLE cumulativeInc #-}
+    {-# INLINABLE cumulativeDec #-}
 
 instance (Cumulative sym) => Cumulative (SubConstr2 c sym p1 p2) where
+    {-# SPECIALIZE instance (Cumulative sym) => Cumulative (SubConstr2 c sym p1 p2) #-}
     cumulativeInc (SubConstr2 s) = cumulativeInc s
     cumulativeDec (SubConstr2 s) = cumulativeDec s
+    {-# INLINABLE cumulativeInc #-}
+    {-# INLINABLE cumulativeDec #-}
 
 instance (Cumulative dom) => Cumulative (Decor Info dom) where
+    {-# SPECIALIZE instance (Cumulative dom) => Cumulative (Decor Info dom) #-}
     cumulativeInc = cumulativeInc . decorExpr
     cumulativeDec = cumulativeDec . decorExpr
+    {-# INLINABLE cumulativeInc #-}
+    {-# INLINABLE cumulativeDec #-}
 
-instance Cumulative Empty
+instance Cumulative Empty where
+  {-# SPECIALIZE instance Cumulative Empty #-}
 
 -- | Extract sub-expressions for which the expression is (weak) monotonic
 -- increasing
@@ -587,6 +675,7 @@ viewCumulativeInc :: (Cumulative dom)
                   => ASTF (Decor Info (dom :|| Typeable)) a
                   -> [ASTF (Decor Info (dom :|| Typeable)) a]
 viewCumulativeInc = simpleMatch cumulativeInc
+{-# INLINABLE viewCumulativeInc #-}
 
 -- | Extract sub-expressions for which the expression is (weak) monotonic
 -- decreasing
@@ -594,3 +683,4 @@ viewCumulativeDec :: (Cumulative dom)
                   => ASTF (Decor Info (dom :|| Typeable)) a
                   -> [ASTF (Decor Info (dom :|| Typeable)) a]
 viewCumulativeDec = simpleMatch cumulativeDec
+{-# INLINABLE viewCumulativeDec #-}

@@ -50,28 +50,35 @@ data FFI a
 
 instance Semantic FFI
   where
+    {-# SPECIALIZE instance Semantic FFI #-}
+    {-# INLINABLE semantics #-}
     semantics (ForeignImport name f) = Sem name f
 
 semanticInstances ''FFI
 
-instance EvalBind FFI where evalBindSym = evalBindSymDefault
+instance EvalBind FFI where
+  {-# SPECIALIZE instance EvalBind FFI #-}
 
 instance AlphaEq dom dom dom env => AlphaEq FFI FFI dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq FFI FFI dom env #-}
 
-instance Sharable FFI
+instance Sharable FFI where {-# SPECIALIZE instance Sharable FFI #-}
 
-instance Cumulative FFI
+instance Cumulative FFI where {-# SPECIALIZE instance Cumulative FFI #-}
 
 instance SizeProp (FFI :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (FFI :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' s) = sizePropDefault s
 
-instance ( (FFI :|| Type) :<: dom
-         , OptimizeSuper dom
-         )
+instance ((FFI :|| Type) :<: dom, OptimizeSuper dom)
       => Optimize (FFI :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (FFI :|| Type) :<: dom
+                            , OptimizeSuper dom
+                            ) => Optimize (FFI :|| Type) dom #-}
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-

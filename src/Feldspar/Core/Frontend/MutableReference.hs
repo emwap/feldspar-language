@@ -47,6 +47,9 @@ newtype Ref a = Ref { unRef :: Data (IORef (Internal a)) }
 
 instance Syntax a => Syntactic (Ref a)
   where
+    {-# SPECIALIZE instance Syntax a => Syntactic (Ref a) #-}
+    {-# INLINABLE desugar #-}
+    {-# INLINABLE sugar #-}
     type Domain (Ref a)   = FeldDomain
     type Internal (Ref a) = IORef (Internal a)
     desugar = desugar . unRef
@@ -54,13 +57,16 @@ instance Syntax a => Syntactic (Ref a)
 
 newRef :: Syntax a => a -> M (Ref a)
 newRef = sugarSymC NewRef
+{-# INLINABLE newRef #-}
 
 getRef :: Syntax a => Ref a -> M a
 getRef = sugarSymC GetRef
+{-# INLINABLE getRef #-}
 
 setRef :: Syntax a => Ref a -> a -> M ()
 setRef = sugarSymC SetRef
+{-# INLINABLE setRef #-}
 
 modifyRef :: Syntax a => Ref a -> (a -> a) -> M ()
 modifyRef = sugarSymC ModRef
-
+{-# INLINABLE modifyRef #-}

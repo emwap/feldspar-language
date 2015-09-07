@@ -51,34 +51,44 @@ data PropSize a
 
 instance Semantic PropSize
   where
+    {-# SPECIALIZE instance Semantic PropSize #-}
+    {-# INLINABLE semantics #-}
     semantics (PropSize _) = Sem "propSize" (const id)
 
 semanticInstances ''PropSize
 
-instance EvalBind PropSize where evalBindSym = evalBindSymDefault
+instance EvalBind PropSize where
+  {-# SPECIALIZE instance EvalBind PropSize #-}
 
 instance SizeProp (PropSize :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (PropSize :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' (PropSize prop)) (WrapFull a :* WrapFull b :* Nil) =
         prop (infoSize a) /\ infoSize b
 
-instance Sharable PropSize
+instance Sharable PropSize where {-# SPECIALIZE instance Sharable PropSize #-}
 
-instance Cumulative PropSize
+instance Cumulative PropSize where {-# SPECIALIZE instance Cumulative PropSize #-}
 
 instance AlphaEq dom dom dom env => AlphaEq PropSize PropSize dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq PropSize PropSize dom env #-}
 
 instance ( (PropSize :|| Type) :<: dom
          , OptimizeSuper dom)
       => Optimize (PropSize :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (PropSize :|| Type) :<: dom
+                            , OptimizeSuper dom)
+                         => Optimize (PropSize :|| Type) dom #-}
+    {-# INLINABLE constructFeatOpt #-}
     constructFeatOpt _ (C' (PropSize prop)) (a :* b :* Nil) =
         return $ updateDecor (f (prop (infoSize $ getInfo a))) b
       where
         f :: Lattice (Size b) => Size b -> Info b -> Info b
         f newSize info = info {infoSize = infoSize info /\ newSize}
 
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-

@@ -28,6 +28,8 @@ data ElementsFeat a
 
 instance Semantic ElementsFeat
   where
+    {-# SPECIALIZE instance Semantic ElementsFeat #-}
+    {-# INLINABLE semantics #-}
     semantics EMaterialize    = Sem "materialize" ematerialize
     semantics EWrite          = Sem "write" (\ix e -> Elements [(ix, e)])
     semantics ESkip           = Sem "skip" (Elements [])
@@ -36,7 +38,9 @@ instance Semantic ElementsFeat
 
 instance Typed ElementsFeat
   where
-    typeDictSym _ = Nothing
+    {-# SPECIALIZE instance Typed ElementsFeat #-}
+    {-# INLINABLE typeDictSym #-}
+    typeDictSym = const Nothing
 
 ematerialize :: Length -> Elements a -> [a]
 ematerialize l (Elements xs) = map snd xs'
@@ -48,35 +52,43 @@ eparFor len ixf = Elements $ concatMap (\(Elements vs) -> vs) xs
 
 semanticInstances ''ElementsFeat
 
-instance EvalBind ElementsFeat where evalBindSym = evalBindSymDefault
+instance EvalBind ElementsFeat where
+  {-# SPECIALIZE instance EvalBind ElementsFeat #-}
 
 instance AlphaEq dom dom dom env => AlphaEq ElementsFeat ElementsFeat dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq ElementsFeat ElementsFeat dom env #-}
 
-instance Sharable ElementsFeat
+instance Sharable ElementsFeat where {-# SPECIALIZE instance Sharable ElementsFeat #-}
 
-instance Cumulative ElementsFeat
+instance Cumulative ElementsFeat where {-# SPECIALIZE instance Cumulative ElementsFeat #-}
 
 instance SizeProp ElementsFeat
   where
+    {-# SPECIALIZE instance SizeProp ElementsFeat #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp EMaterialize (WrapFull len :* WrapFull arr :* Nil) = infoSize arr
     sizeProp EWrite       _                                     = universal
     sizeProp ESkip        _                                     = universal
     sizeProp EPar         (WrapFull p1 :* WrapFull p2 :* Nil)   = universal -- TODO: p1 U p2
-    sizeProp EparFor        _                                   = universal
+    sizeProp EparFor      _                                     = universal
 
 instance ( ElementsFeat :<: dom
          , OptimizeSuper dom
          )
       => Optimize ElementsFeat dom
   where
+    {-# SPECIALIZE instance (ElementsFeat :<: dom, OptimizeSuper dom) =>
+          Optimize ElementsFeat dom #-}
+    {-# INLINABLE constructFeatOpt #-}
     constructFeatOpt _ EPar (a :* b :* Nil)
      | Just ESkip <- prj b = return a
      | Just ESkip <- prj a = return b
 
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
 
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts EMaterialize = constructFeatUnOptDefaultTyp opts typeRep EMaterialize
     constructFeatUnOpt opts EWrite = constructFeatUnOptDefaultTyp opts typeRep EWrite
     constructFeatUnOpt opts ESkip = constructFeatUnOptDefaultTyp opts typeRep ESkip

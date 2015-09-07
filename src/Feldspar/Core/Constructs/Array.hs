@@ -70,6 +70,8 @@ data Array a
 
 instance Semantic Array
   where
+    {-# SPECIALIZE instance Semantic Array #-}
+    {-# INLINABLE semantics #-}
     semantics Append    = Sem "(++)" (++)
     semantics GetIx     = Sem "(!)" evalGetIx
       where
@@ -112,18 +114,22 @@ instance Semantic Array
 
 semanticInstances ''Array
 
-instance EvalBind Array where evalBindSym = evalBindSymDefault
+instance EvalBind Array where
+  {-# SPECIALIZE instance EvalBind Array #-}
 
 instance AlphaEq dom dom dom env => AlphaEq Array Array dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance (AlphaEq dom dom dom env) =>
+          AlphaEq Array Array dom env #-}
 
-instance Sharable Array
+instance Sharable Array where {-# SPECIALIZE instance Sharable Array #-}
 
-instance Cumulative Array
+instance Cumulative Array where {-# SPECIALIZE instance Cumulative Array #-}
 
 instance SizeProp (Array :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (Array :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' Parallel) (WrapFull len :* WrapFull ixf :* Nil) =
         infoSize len :> snd (infoSize ixf)
     sizeProp (C' Sequential) (WrapFull len :* _ :* WrapFull step :* Nil) =
@@ -165,6 +171,21 @@ instance
     ) =>
       Optimize (Array :|| Type) dom
   where
+    {-# SPECIALIZE instance ( Cumulative dom
+                            , (Array    :|| Type) :<: dom
+                            , (BITS     :|| Type) :<: dom
+                            , (EQ       :|| Type) :<: dom
+                            , (NUM      :|| Type) :<: dom
+                            , Let                 :<: dom
+                            , (ORD      :|| Type) :<: dom
+                            , (INTEGRAL :|| Type) :<: dom
+                            , (COMPLEX  :|| Type) :<: dom
+                            , (Logic    :|| Type) :<: dom
+                            , (Variable :|| Type) :<: dom
+                            , CLambda Type :<: dom
+                            , OptimizeSuper dom
+                            ) => Optimize (Array :|| Type) dom #-}
+    {-# INLINABLE optimizeFeat #-}
     optimizeFeat opts sym@(C' Parallel) (len :* ixf :* Nil) = do
         len' <- optimizeM opts len
         let szI     = infoSize (getInfo len')
@@ -279,6 +300,7 @@ instance
         = return arr
 
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-
+    {-# INLINABLE constructFeatUnOpt #-}

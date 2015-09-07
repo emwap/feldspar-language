@@ -300,12 +300,15 @@ evalTarget n = evalBind . reifyFeld defaultFeldOpts n
 
 desugar :: SyntacticFeld a => a -> Data (Internal a)
 desugar = Syntactic.resugar
+{-# INLINABLE desugar #-}
 
 sugar :: SyntacticFeld a => Data (Internal a) -> a
 sugar = Syntactic.resugar
+{-# INLINABLE sugar #-}
 
 resugar :: (SyntacticFeld a, SyntacticFeld b, Internal a ~ Internal b) => a -> b
 resugar = Syntactic.resugar
+{-# INLINABLE resugar #-}
 
 
 
@@ -315,10 +318,14 @@ resugar = Syntactic.resugar
 
 instance (Type a, Arbitrary a) => Arbitrary (Data a)
   where
+    {-# SPECIALIZE instance (Type a, Arbitrary a) => Arbitrary (Data a) #-}
+    {-# INLINABLE arbitrary #-}
     arbitrary = fmap value arbitrary
 
 instance Testable (Data Bool)
   where
+    {-# SPECIALIZE instance Testable (Data Bool) #-}
+    {-# INLINABLE property #-}
     property = property . eval
 
 (===>) :: Testable prop => Data Bool -> prop -> Property

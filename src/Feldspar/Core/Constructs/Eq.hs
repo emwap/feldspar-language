@@ -54,26 +54,35 @@ data EQ a
 
 instance Semantic EQ
   where
+    {-# SPECIALIZE instance Semantic EQ #-}
+    {-# INLINABLE semantics #-}
     semantics Equal    = Sem "(==)" (==)
     semantics NotEqual = Sem "(/=)" (/=)
 
 semanticInstances ''EQ
 
-instance EvalBind EQ where evalBindSym = evalBindSymDefault
+instance EvalBind EQ where
+  {-# SPECIALIZE instance EvalBind EQ #-}
 
-instance AlphaEq dom dom dom env => AlphaEq EQ EQ dom env
-  where
-    alphaEqSym = alphaEqSymDefault
+instance AlphaEq dom dom dom env => AlphaEq EQ EQ dom env where
+    {-# SPECIALIZE instance (AlphaEq dom dom dom env) => AlphaEq EQ EQ dom env #-}
 
-instance Sharable EQ
+instance Sharable EQ where
+  {-# SPECIALIZE instance Sharable EQ #-}
 
-instance Cumulative EQ
+instance Cumulative EQ where
+  {-# SPECIALIZE instance Cumulative EQ #-}
 
 instance SizeProp (EQ :|| Type)
-  where sizeProp a@(C' _) = sizePropDefault a
+  where
+    {-# SPECIALIZE instance SizeProp (EQ :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
+    sizeProp a@(C' _) = sizePropDefault a
 
 instance ((EQ :|| Type) :<: dom, OptimizeSuper dom) => Optimize (EQ :|| Type) dom
   where
+    {-# SPECIALIZE instance ((EQ :|| Type) :<: dom, OptimizeSuper dom) =>
+          Optimize (EQ :|| Type) dom #-}
     constructFeatOpt _ (C' Equal) (a :* b :* Nil)
         | alphaEq a b
         = return $ literalDecor True
@@ -95,6 +104,7 @@ instance ((EQ :|| Type) :<: dom, OptimizeSuper dom) => Optimize (EQ :|| Type) do
         = return $ literalDecor True
 
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-
+    {-# INLINABLE constructFeatUnOpt #-}

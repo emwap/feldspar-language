@@ -50,6 +50,9 @@ newtype P a = P { unP :: Mon FeldDomain Par a }
 
 instance Syntax a => Syntactic (P a)
   where
+    {-# SPECIALIZE instance Syntax a => Syntactic (P a) #-}
+    {-# INLINABLE desugar #-}
+    {-# INLINABLE sugar #-}
     type Domain (P a)   = FeldDomain
     type Internal (P a) = Par (Internal a)
     desugar = desugar . unP
@@ -59,8 +62,10 @@ newtype IVar a = IVar { unIVar :: Data (IV (Internal a)) }
 
 instance Syntax a => Syntactic (IVar a)
   where
+    {-# SPECIALIZE instance Syntax a => Syntactic (IVar a) #-}
+    {-# INLINABLE desugar #-}
+    {-# INLINABLE sugar #-}
     type Domain (IVar a)   = FeldDomain
     type Internal (IVar a) = IV (Internal a)
     desugar = desugar . unIVar
     sugar   = IVar . sugar
-

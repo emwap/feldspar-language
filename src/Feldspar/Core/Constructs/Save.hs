@@ -49,27 +49,36 @@ data Save a
 
 instance Semantic Save
   where
+    {-# SPECIALIZE instance Semantic Save #-}
+    {-# INLINABLE semantics #-}
     semantics Save = Sem "save" id
 
 semanticInstances ''Save
 
-instance EvalBind Save where evalBindSym = evalBindSymDefault
+instance EvalBind Save where
+  {-# SPECIALIZE instance EvalBind Save #-}
 
 instance AlphaEq dom dom dom env => AlphaEq Save Save dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq Save Save dom env #-}
 
-instance Sharable Save
+instance Sharable Save where {-# SPECIALIZE instance Sharable Save #-}
 
-instance Cumulative Save
+instance Cumulative Save where {-# SPECIALIZE instance Cumulative Save #-}
 
 instance SizeProp (Save :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (Save :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' Save) (WrapFull a :* Nil) = infoSize a
 
 instance ( (Save :|| Type) :<: dom
          , OptimizeSuper dom)
       => Optimize (Save :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (Save :|| Type) :<: dom
+                            , OptimizeSuper dom)
+                         => Optimize (Save :|| Type) dom #-}
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-

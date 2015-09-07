@@ -37,32 +37,39 @@ where
 
 import Prelude hiding (Integral)
 
-import Feldspar.Core.Constructs
-import Feldspar.Core.Constructs.Conversion
-import Feldspar.Core.Frontend.Integral
-import Feldspar.Core.Frontend.Num
+import Feldspar.Core.Constructs (Data,sugarSymF)
+import Feldspar.Core.Constructs.Conversion (Conversion(..))
+import Feldspar.Core.Frontend.Integral (Integral)
+import Feldspar.Core.Frontend.Num (Numeric)
 
 i2f :: (Integral a, Numeric b, RealFloat b) => Data a -> Data b
 i2f = i2n
+{-# INLINABLE i2f #-}
 
 f2i :: (Integral a, Numeric b, RealFloat b) => Data b -> Data a
 f2i = sugarSymF F2I
+{-# INLINABLE f2i #-}
 
 i2n :: (Integral a, Numeric b) => Data a -> Data b
 i2n = sugarSymF I2N
+{-# INLINABLE i2n #-}
 
 b2i :: Integral a => Data Bool -> Data a
 b2i = sugarSymF B2I
+{-# INLINABLE b2i #-}
 
 truncate :: (Integral a, Numeric b, RealFloat b) => Data b -> Data a
 truncate = f2i
+{-# INLINABLE truncate #-}
 
 round :: (Integral a, Numeric b, RealFloat b) => Data b -> Data a
 round = sugarSymF Round
+{-# INLINABLE round #-}
 
 ceiling :: (Integral a, Numeric b, RealFloat b) => Data b -> Data a
 ceiling = sugarSymF Ceiling
+{-# INLINABLE ceiling #-}
 
 floor :: (Integral a, Numeric b, RealFloat b) => Data b -> Data a
 floor = sugarSymF Floor
-
+{-# INLINABLE floor #-}

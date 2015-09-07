@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -42,7 +43,6 @@ import Prelude hiding (Integral(..))
 import Data.Int
 import Data.Word
 
-import Feldspar.Range (Range(..))
 import Feldspar.Core.Types
 import Feldspar.Core.Constructs
 import Feldspar.Core.Constructs.Bits
@@ -54,65 +54,89 @@ import qualified Data.Bits as B
 infixl 5 .<<.,.>>.
 infixl 4 ⊕
 
-class (Type a, B.Bits a, Integral a, Bounded a, Size a ~ Range a) => Bits a
+class (BitsSuper a, Integral a) => Bits a
   where
     -- * Logical operations
     (.&.)         :: Data a -> Data a -> Data a
     (.&.)         = sugarSymF BAnd
+    {-# INLINABLE (.&.) #-}
     (.|.)         :: Data a -> Data a -> Data a
     (.|.)         = sugarSymF BOr
+    {-# INLINABLE (.|.) #-}
     xor           :: Data a -> Data a -> Data a
     xor           = sugarSymF BXor
+    {-# INLINABLE xor #-}
     complement    :: Data a -> Data a
     complement    = sugarSymF Complement
+    {-# INLINABLE complement #-}
 
     -- * Bitwise operations
     bit           :: Data Index -> Data a
     bit           = sugarSymF Bit
+    {-# INLINABLE bit #-}
     setBit        :: Data a -> Data Index -> Data a
     setBit        = sugarSymF SetBit
+    {-# INLINABLE setBit #-}
     clearBit      :: Data a -> Data Index -> Data a
     clearBit      = sugarSymF ClearBit
+    {-# INLINABLE clearBit #-}
     complementBit :: Data a -> Data Index -> Data a
     complementBit = sugarSymF ComplementBit
+    {-# INLINABLE complementBit #-}
     testBit       :: Data a -> Data Index -> Data Bool
     testBit       = sugarSymF TestBit
+    {-# INLINABLE testBit #-}
 
     -- * Movement operations
     shiftLU       :: Data a -> Data Index -> Data a
     shiftLU       = sugarSymF ShiftLU
+    {-# INLINABLE shiftLU #-}
     shiftRU       :: Data a -> Data Index -> Data a
     shiftRU       = sugarSymF ShiftRU
+    {-# INLINABLE shiftRU #-}
     shiftL        :: Data a -> Data IntN -> Data a
     shiftL        = sugarSymF ShiftL
+    {-# INLINABLE shiftL #-}
     shiftR        :: Data a -> Data IntN -> Data a
     shiftR        = sugarSymF ShiftR
+    {-# INLINABLE shiftR #-}
     rotateLU      :: Data a -> Data Index -> Data a
     rotateLU      = sugarSymF RotateLU
+    {-# INLINABLE rotateLU #-}
     rotateRU      :: Data a -> Data Index -> Data a
     rotateRU      = sugarSymF RotateRU
+    {-# INLINABLE rotateRU #-}
     rotateL       :: Data a -> Data IntN -> Data a
     rotateL       = sugarSymF RotateL
+    {-# INLINABLE rotateL #-}
     rotateR       :: Data a -> Data IntN -> Data a
     rotateR       = sugarSymF RotateR
+    {-# INLINABLE rotateR #-}
     reverseBits   :: Data a -> Data a
     reverseBits   = sugarSymF ReverseBits
+    {-# INLINABLE reverseBits #-}
 
     -- * Query operations
     bitScan       :: Data a -> Data Index
     bitScan       = sugarSymF BitScan
+    {-# INLINABLE bitScan #-}
     bitCount      :: Data a -> Data Index
     bitCount      = sugarSymF BitCount
+    {-# INLINABLE bitCount #-}
 
     bitSize       :: Data a -> Data Index
     bitSize       = value . bitSize'
+    {-# INLINABLE bitSize #-}
     bitSize'      :: Data a -> Index
     bitSize'      = const $ fromIntegral $ finiteBitSize (undefined :: a)
+    {-# INLINABLE bitSize' #-}
 
     isSigned      :: Data a -> Data Bool
     isSigned      = value . isSigned'
+    {-# INLINABLE isSigned #-}
     isSigned'     :: Data a -> Bool
     isSigned'     = const $ B.isSigned (undefined :: a)
+    {-# INLINABLE isSigned' #-}
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 708
 finiteBitSize :: (B.FiniteBits b) => b -> Int
@@ -121,36 +145,42 @@ finiteBitSize = B.finiteBitSize
 finiteBitSize :: (B.Bits b) => b -> Int
 finiteBitSize = B.bitSize
 #endif
+{-# INLINABLE finiteBitSize #-}
 
-instance Bits Word8
-instance Bits Word16
-instance Bits Word32
-instance Bits Word64
-instance Bits WordN
-instance Bits Int8
-instance Bits Int16
-instance Bits Int32
-instance Bits Int64
-instance Bits IntN
+instance Bits Word8  where {-# SPECIALIZE instance Bits Word8 #-}
+instance Bits Word16 where {-# SPECIALIZE instance Bits Word16 #-}
+instance Bits Word32 where {-# SPECIALIZE instance Bits Word32 #-}
+instance Bits Word64 where {-# SPECIALIZE instance Bits Word64 #-}
+instance Bits WordN  where {-# SPECIALIZE instance Bits WordN #-}
+instance Bits Int8   where {-# SPECIALIZE instance Bits Int8 #-}
+instance Bits Int16  where {-# SPECIALIZE instance Bits Int16 #-}
+instance Bits Int32  where {-# SPECIALIZE instance Bits Int32 #-}
+instance Bits Int64  where {-# SPECIALIZE instance Bits Int64 #-}
+instance Bits IntN   where {-# SPECIALIZE instance Bits IntN #-}
 
 -- * Combinators
 
 (⊕)    :: (Bits a) => Data a -> Data a -> Data a
 (⊕)    =  xor
+{-# INLINABLE (⊕) #-}
 (.<<.) :: (Bits a) => Data a -> Data Index -> Data a
 (.<<.) =  shiftLU
+{-# INLINABLE (.<<.) #-}
 (.>>.) :: (Bits a) => Data a -> Data Index -> Data a
 (.>>.) =  shiftRU
+{-# INLINABLE (.>>.) #-}
 
 -- | Set all bits to one
 allOnes :: Bits a => Data a
 allOnes = complement 0
+{-# INLINABLE allOnes #-}
 
 -- | Set the `n` lowest bits to one
 oneBits :: Bits a => Data Index -> Data a
 oneBits n = complement (allOnes .<<. n)
+{-# INLINABLE oneBits #-}
 
 -- | Extract the `k` lowest bits
 lsbs :: Bits a => Data Index -> Data a -> Data a
 lsbs k i = i .&. oneBits k
-
+{-# INLINABLE lsbs #-}

@@ -50,7 +50,6 @@ import Feldspar.Range
 import Feldspar.Core.Types
 import Feldspar.Core.Interpretation
 import Feldspar.Core.Constructs.Binding
-import Feldspar.Core.Constructs.Literal
 import Feldspar.Core.Constructs.Mutable
 import Feldspar.Core.Constructs.MutableReference
 
@@ -67,6 +66,8 @@ data Loop a
 
 instance Monad m => Semantic (LoopM m)
   where
+    {-# SPECIALIZE instance (Monad m) => Semantic (LoopM m) #-}
+    {-# INLINABLE semantics #-}
     semantics While = Sem "while" while
       where
         while cond body = do
@@ -79,6 +80,8 @@ instance Monad m => Semantic (LoopM m)
 
 instance Semantic Loop
   where
+    {-# SPECIALIZE instance Semantic Loop #-}
+    {-# INLINABLE semantics #-}
     semantics ForLoop = Sem "forLoop" forLoop
       where
         forLoop 0 initial _    = initial
@@ -90,39 +93,62 @@ instance Semantic Loop
             go st | cond st   = go $ body st
                   | otherwise = st
 
-instance Monad m => Equality   (LoopM m) where equal = equalDefault; exprHash = exprHashDefault
-instance Monad m => Render     (LoopM m) where renderSym  = renderSymDefault
-                                               renderArgs = renderArgsDefault
-instance Monad m => StringTree (LoopM m)
-instance Monad m => Eval       (LoopM m) where evaluate = evaluateDefault
-instance Monad m => EvalBind   (LoopM m) where evalBindSym = evalBindSymDefault
-instance            Sharable   (LoopM m)
-instance            Cumulative (LoopM m)
+instance Monad m => Equality   (LoopM m) where
+  {-# SPECIALIZE instance (Monad m) => Equality (LoopM m) #-}
+  {-# INLINABLE equal #-}
+  {-# INLINABLE exprHash #-}
+  equal = equalDefault
+  exprHash = exprHashDefault
+
+instance Monad m => Render     (LoopM m) where
+  {-# SPECIALIZE instance (Monad m) => Render (LoopM m) #-}
+  {-# INLINABLE renderSym #-}
+  renderSym = renderSymDefault
+
+instance Monad m => StringTree (LoopM m) where
+  {-# SPECIALIZE instance (Monad m) => StringTree (LoopM m) #-}
+instance Monad m => Eval       (LoopM m) where
+  {-# SPECIALIZE instance (Monad m) => Eval (LoopM m) #-}
+  {-# INLINABLE evaluate #-}
+  evaluate = evaluateDefault
+
+instance Monad m => EvalBind   (LoopM m) where
+  {-# SPECIALIZE instance (Monad m) => EvalBind (LoopM m) #-}
+
+instance Sharable   (LoopM m) where {-# SPECIALIZE instance Sharable (LoopM m) #-}
+instance Cumulative (LoopM m) where {-# SPECIALIZE instance Cumulative (LoopM m) #-}
 
 semanticInstances ''Loop
 
-instance EvalBind Loop where evalBindSym = evalBindSymDefault
+instance EvalBind Loop where
+  {-# SPECIALIZE instance EvalBind Loop #-}
 
 instance (AlphaEq dom dom dom env, Monad m) =>
     AlphaEq (LoopM m) (LoopM m) dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance (AlphaEq dom dom dom env, Monad m) =>
+          AlphaEq (LoopM m) (LoopM m) dom env #-}
 
 instance AlphaEq dom dom dom env => AlphaEq Loop Loop dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance (AlphaEq dom dom dom env) =>
+          AlphaEq Loop Loop dom env #-}
 
-instance Sharable Loop
+instance Sharable Loop where {-# SPECIALIZE instance Sharable Loop #-}
 
-instance Cumulative Loop
+instance Cumulative Loop where {-# SPECIALIZE instance Cumulative Loop #-}
 
 instance SizeProp (LoopM m)
   where
-    sizeProp While _ = AnySize
+    {-# SPECIALIZE instance SizeProp (LoopM m) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp For   _ = AnySize
+    sizeProp While _ = AnySize
 
 instance SizeProp (Loop :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (Loop :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' ForLoop)   (_ :* _ :* WrapFull step :* Nil) = snd $ snd $ infoSize step
     sizeProp (C' WhileLoop) (_ :* _ :* WrapFull step :* Nil) = snd $ infoSize step
 
@@ -139,6 +165,17 @@ instance ( LoopM Mut :<: dom
          )
       => Optimize (LoopM Mut) dom
   where
+    {-# SPECIALIZE instance ( LoopM Mut :<: dom
+                            , (Variable :|| Type) :<: dom
+                            , CLambda Type :<: dom
+                            , MONAD Mut :<: dom
+                            , MutableReference :<: dom
+                            , Let :<: dom
+                            , Optimize (CLambda Type) dom
+                            , Optimize (MONAD Mut) dom
+                            , Optimize dom dom
+                            )
+                         => Optimize (LoopM Mut) dom #-}
     optimizeFeat opts for@For (len :* step :* Nil) = do
         len' <- optimizeM opts len
         let szI     = infoSize (getInfo len')
@@ -148,10 +185,11 @@ instance ( LoopM Mut :<: dom
           Info{} -> constructFeat opts for (len' :* step' :* Nil)
 
     optimizeFeat opts a args = optimizeFeatDefault opts a args
+    {-# INLINABLE optimizeFeat #-}
 
     constructFeatOpt opts For (len :* (lam1 :$ (bnd :$ getRefV2@(grf :$ ref) :$ bd@(lam3 :$ body))) :* Nil)
       | Just (SubConstr2 (Lambda v1)) <- prjLambda lam1
-      , Just lam3'@(SubConstr2 (Lambda v3)) <- prjLambda lam3
+      , Just lam3'@(SubConstr2 (Lambda _)) <- prjLambda lam3
       , Just Bind <- prjMonad monadProxy bnd
       , Just GetRef <- prj grf
       , Just (C' (Variable v2)) <- prjF ref
@@ -166,12 +204,13 @@ instance ( LoopM Mut :<: dom
       fvars = infoVars $ getInfo bd
 
     constructFeatOpt opts feat args = constructFeatUnOpt opts feat args
+    {-# INLINABLE constructFeatOpt #-}
 
+    constructFeatUnOpt opts For args = constructFeatUnOptDefaultTyp opts voidTypeRep For args
     constructFeatUnOpt opts While args = constructFeatUnOptDefaultTyp opts voidTypeRep While args
-    constructFeatUnOpt opts For   args = constructFeatUnOptDefaultTyp opts voidTypeRep For   args
+    {-# INLINABLE constructFeatUnOpt #-}
 
-instance ( (Literal  :|| Type) :<: dom
-         , (Loop     :|| Type) :<: dom
+instance ( (Loop     :|| Type) :<: dom
          , (Variable :|| Type) :<: dom
          , CLambda Type :<: dom
          , Let :<: dom
@@ -179,6 +218,14 @@ instance ( (Literal  :|| Type) :<: dom
          )
       => Optimize (Loop :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (Loop     :|| Type) :<: dom
+                            , (Variable :|| Type) :<: dom
+                            , CLambda Type :<: dom
+                            , Let :<: dom
+                            , OptimizeSuper dom
+                            )
+                         => Optimize (Loop :|| Type) dom #-}
+    {-# INLINABLE optimizeFeat #-}
     optimizeFeat opts sym@(C' ForLoop) (len :* initial :* step :* Nil) = do
         len'  <- optimizeM opts len
         init' <- optimizeM opts initial
@@ -227,6 +274,7 @@ instance ( (Literal  :|| Type) :<: dom
       -- This optimization requires that the len > 0
 
     constructFeatOpt opts feat args = constructFeatUnOpt opts feat args
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-
+    {-# INLINABLE constructFeatUnOpt #-}

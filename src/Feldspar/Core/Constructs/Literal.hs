@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
@@ -49,16 +50,32 @@ import Data.Typeable
 
 instance Sharable Literal
   where
+    {-# SPECIALIZE instance Sharable Literal #-}
+    {-# INLINABLE sharable #-}
     sharable (Literal a) = typeRepTyCon (typeOf a) == typeRepTyCon (typeOf [()])
 
-instance Cumulative Literal
+instance Cumulative Literal where {-# SPECIALIZE instance Cumulative Literal #-}
 
 instance SizeProp (Literal :|| Type)
   where
-    sizeProp (C' (Literal a)) Nil = sizeOf a
+    {-# SPECIALIZE instance SizeProp (Literal :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
+    sizeProp (C' (Literal a)) = const $ sizeOf a
 
-instance ((Literal :|| Type) :<: dom, OptimizeSuper dom) =>
+instance (OptimizeSuper dom) =>
     Optimize (Literal :|| Type) dom
   where
-    constructFeatUnOpt opts l@(C' _) = constructFeatUnOptDefault opts l
+    {-# SPECIALIZE instance (OptimizeSuper dom) =>
+          Optimize (Literal :|| Type) dom #-}
 
+    sizePropEnv (C' (Literal l :: Literal a)) = const $ return (sizeOf l :: Size (DenResult a))
+    {-# INLINABLE sizePropEnv #-}
+
+    optimizeFeat _ (C' (Literal l)) = const $ return $ literalDecor l
+    {-# INLINABLE optimizeFeat #-}
+
+    constructFeatOpt _ (C' (Literal l)) = const $ return $ literalDecor l
+    {-# INLINABLE constructFeatOpt #-}
+
+    constructFeatUnOpt _ (C' (Literal l)) = const $ return $ literalDecor l
+    {-# INLINABLE constructFeatUnOpt #-}

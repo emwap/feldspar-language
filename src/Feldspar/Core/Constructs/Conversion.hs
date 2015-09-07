@@ -68,6 +68,7 @@ data Conversion a
 rangeToSize :: Lattice (Size a) => TypeRep a -> Range Integer -> Size a
 rangeToSize (IntType _ _) r = rangeProp r
 rangeToSize _ _             = universal
+{-# INLINABLE rangeToSize #-}
 
 rangeProp :: forall a . (Bounded a, Integral a) => Range Integer -> Range a
 rangeProp (Range l u)
@@ -79,6 +80,8 @@ rangeProp (Range l u)
 
 instance Semantic Conversion
   where
+    {-# SPECIALIZE instance Semantic Conversion #-}
+    {-# INLINABLE semantics #-}
     semantics F2I     = Sem "f2i"     truncate
     semantics I2N     = Sem "i2n"     (fromInteger.toInteger)
     semantics B2I     = Sem "b2i"     (\b -> if b then 1 else 0)
@@ -88,18 +91,22 @@ instance Semantic Conversion
 
 semanticInstances ''Conversion
 
-instance EvalBind Conversion where evalBindSym = evalBindSymDefault
+instance EvalBind Conversion where
+  {-# SPECIALIZE instance EvalBind Conversion #-}
 
 instance AlphaEq dom dom dom env => AlphaEq Conversion Conversion dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance (AlphaEq dom dom dom env) =>
+          AlphaEq Conversion Conversion dom env #-}
 
-instance Sharable Conversion
+instance Sharable Conversion where {-# SPECIALIZE instance Sharable Conversion #-}
 
-instance Cumulative Conversion
+instance Cumulative Conversion where {-# SPECIALIZE instance Cumulative Conversion #-}
 
 instance SizeProp (Conversion :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (Conversion :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' F2I)     _ = universal
     sizeProp (C' i2n@I2N) (WrapFull a :* Nil)
         = rangeToSize (resultType i2n) (mapMonotonic toInteger (infoSize a))
@@ -112,6 +119,9 @@ instance ( (Conversion :|| Type) :<: dom
          , OptimizeSuper dom)
       => Optimize (Conversion :|| Type) dom
   where
+    {-# SPECIALIZE instance ((Conversion :|| Type) :<: dom, OptimizeSuper dom) =>
+          Optimize (Conversion :|| Type) dom #-}
+    {-# INLINABLE constructFeatOpt #-}
     constructFeatOpt _ (C' i2n@I2N) (a :* Nil)
         | Just TypeEq <- typeEq (resultType i2n) (infoType $ getInfo a)
         = return a
@@ -119,4 +129,4 @@ instance ( (Conversion :|| Type) :<: dom
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
 
     constructFeatUnOpt opts a@(C' _) = constructFeatUnOptDefault opts a
-
+    {-# INLINABLE constructFeatUnOpt #-}

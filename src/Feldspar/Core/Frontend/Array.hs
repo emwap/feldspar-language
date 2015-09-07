@@ -45,30 +45,37 @@ import Feldspar.Core.Frontend.Tuple ()
 
 parallel :: Type a => Data Length -> (Data Index -> Data a) -> Data [a]
 parallel = sugarSymF Parallel
+{-# INLINABLE parallel #-}
 
 
 sequential :: (Type a, Syntax s) =>
               Data Length -> s -> (Data Index -> s -> (Data a,s)) -> Data [a]
 sequential = sugarSymF Sequential
+{-# INLINABLE sequential #-}
 
 
 append :: Type a => Data [a] -> Data [a] -> Data [a]
 append = sugarSymF Append
+{-# INLINABLE append #-}
 
 getLength :: Type a => Data [a] -> Data Length
 getLength = sugarSymF GetLength
+{-# INLINABLE getLength #-}
 
 -- | Change the length of the vector to the supplied value. If the supplied
 -- length is greater than the old length, the new elements will have undefined
 -- value.
 setLength :: Type a => Data Length -> Data [a] -> Data [a]
 setLength = sugarSymF SetLength
+{-# INLINABLE setLength #-}
 
 getIx :: Type a => Data [a] -> Data Index -> Data a
 getIx = sugarSymF GetIx
+{-# INLINABLE getIx #-}
 
 setIx :: Type a => Data [a] -> Data Index -> Data a -> Data [a]
 setIx = sugarSymF SetIx
+{-# INLINABLE setIx #-}
 
 type instance Elem      (Data [a]) = Data a
 type instance CollIndex (Data [a]) = Data Index
@@ -76,15 +83,22 @@ type instance CollSize  (Data [a]) = Data Length
 
 instance Type a => Indexed (Data [a])
   where
+    {-# SPECIALIZE instance (Type a) => Indexed (Data [a]) #-}
+    {-# INLINABLE (!) #-}
     (!) = getIx
 
 instance Type a => Sized (Data [a])
   where
+    {-# SPECIALIZE instance (Type a) => Sized (Data [a]) #-}
+    {-# INLINABLE collSize #-}
+    {-# INLINABLE setCollSize #-}
     collSize    = getLength
     setCollSize = setLength
 
 instance (Type a, Type b) => CollMap (Data [a]) (Data [b])
   where
+    {-# SPECIALIZE instance (Type a, Type b) => CollMap (Data [a]) (Data [b]) #-}
+    {-# INLINABLE collMap #-}
     collMap f arr = parallel (getLength arr) (f . getIx arr)
 
 -- | Array patch
@@ -92,4 +106,4 @@ instance (Type a, Type b) => CollMap (Data [a]) (Data [b])
     Patch (CollSize a) (CollSize a) -> Patch (Elem a) (Elem a) -> Patch a a
 (sizePatch |> elemPatch) a =
     collMap elemPatch $ setCollSize (sizePatch (collSize a)) a
-
+{-# INLINABLE (|>) #-}

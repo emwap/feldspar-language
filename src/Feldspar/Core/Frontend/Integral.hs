@@ -57,28 +57,32 @@ class (Ord a, Numeric a, BoundedInt a, P.Integral a, Size a ~ Range a) => Integr
   where
     quot :: Data a -> Data a -> Data a
     quot = sugarSymF Quot
+    {-# INLINABLE quot #-}
     rem  :: Data a -> Data a -> Data a
     rem  = sugarSymF Rem
+    {-# INLINABLE rem #-}
     div  :: Data a -> Data a -> Data a
     div  = sugarSymF Div
+    {-# INLINABLE div #-}
     mod  :: Data a -> Data a -> Data a
     mod  = sugarSymF Mod
+    {-# INLINABLE mod #-}
     (^)  :: Data a -> Data a -> Data a
     (^)  = sugarSymF Exp
+    {-# INLINABLE (^) #-}
 
 divSem :: (Integral a)
        => Data a -> Data a -> Data a
 divSem x y = (x > 0 && y < 0 || x < 0 && y > 0) && rem x y /= 0 ?   quot x y P.- 1
                                                                 P.$ quot x y
 
-instance Integral Word8
-instance Integral Word16
-instance Integral Word32
-instance Integral Word64
-instance Integral WordN
-instance Integral Int8
-instance Integral Int16
-instance Integral Int32
-instance Integral Int64
-instance Integral IntN
-
+instance Integral Word8  where {-# SPECIALIZE instance Integral Word8 #-}
+instance Integral Word16 where {-# SPECIALIZE instance Integral Word16 #-}
+instance Integral Word32 where {-# SPECIALIZE instance Integral Word32 #-}
+instance Integral Word64 where {-# SPECIALIZE instance Integral Word64 #-}
+instance Integral WordN  where {-# SPECIALIZE instance Integral WordN #-}
+instance Integral Int8   where {-# SPECIALIZE instance Integral Int8 #-}
+instance Integral Int16  where {-# SPECIALIZE instance Integral Int16 #-}
+instance Integral Int32  where {-# SPECIALIZE instance Integral Int32 #-}
+instance Integral Int64  where {-# SPECIALIZE instance Integral Int64 #-}
+instance Integral IntN   where {-# SPECIALIZE instance Integral IntN #-}

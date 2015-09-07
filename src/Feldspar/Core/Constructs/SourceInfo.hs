@@ -53,26 +53,36 @@ instance Sharable (Decor SourceInfo1 Identity)
   where
     sharable _ = True
 
-instance Cumulative (Decor SourceInfo1 Identity)
+instance Cumulative (Decor SourceInfo1 Identity) where
+  {-# SPECIALIZE instance Cumulative (Decor SourceInfo1 Identity) #-}
 
-instance Cumulative Identity
+instance Cumulative Identity where
+  {-# SPECIALIZE instance Cumulative Identity #-}
 
 instance SizeProp Identity
   where
+    {-# SPECIALIZE instance SizeProp Identity #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp Id (WrapFull a :* Nil) = infoSize a
 
 instance SizeProp ((Decor SourceInfo1 Identity) :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp ((Decor SourceInfo1 Identity) :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' a) = sizeProp $ decorExpr a
 
 instance ((Decor SourceInfo1 Identity :|| Type) :<: dom, Optimize dom dom) =>
     Optimize ((Decor SourceInfo1 Identity) :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (Decor SourceInfo1 Identity :|| Type) :<: dom
+                            , Optimize dom dom) =>
+          Optimize ((Decor SourceInfo1 Identity) :|| Type) dom #-}
+    {-# INLINABLE optimizeFeat #-}
     optimizeFeat opts (C' (Decor (SourceInfo1 src) Id)) (a :* Nil) =
         localSource src $ optimizeM opts a
 
+    {-# INLINABLE constructFeatOpt #-}
     constructFeatOpt _ (C' (Decor (SourceInfo1 _) Id)) (a :* Nil) = return a
 
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-
-

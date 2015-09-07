@@ -48,32 +48,51 @@ data Error a
 
 instance Semantic Error
   where
+    {-# SPECIALIZE instance Semantic Error #-}
+    {-# INLINABLE semantics #-}
     semantics Undefined    = Sem "undefined" undefined
     semantics (Assert msg) = Sem "assert"
         (\cond a -> if cond then a else error ("Assert failed: " ++ msg))
 
 instance Render Error
   where
+    {-# SPECIALIZE instance Render Error #-}
+    {-# INLINABLE renderSym #-}
     renderSym Undefined    = "undefined"
     renderSym (Assert msg) = "assert " ++ show msg
 
-instance Equality   Error where equal = equalDefault; exprHash = exprHashDefault
-instance StringTree Error
-instance Eval       Error where evaluate = evaluateDefault
-instance EvalBind   Error where evalBindSym = evalBindSymDefault
-instance Sharable   Error
-instance Cumulative  Error
+instance Equality Error where
+  {-# SPECIALIZE instance Equality Error #-}
+  {-# INLINABLE equal #-}
+  {-# INLINABLE exprHash #-}
+  equal    = equalDefault
+  exprHash = exprHashDefault
+instance StringTree Error where
+  {-# SPECIALIZE instance StringTree Error #-}
+instance Eval Error where
+  {-# SPECIALIZE instance Eval Error #-}
+  {-# INLINABLE evaluate #-}
+  evaluate = evaluateDefault
+instance EvalBind Error where
+  {-# SPECIALIZE instance EvalBind Error #-}
+
+instance Sharable Error where {-# SPECIALIZE instance Sharable Error #-}
+instance Cumulative Error where {-# SPECIALIZE instance Cumulative Error #-}
 
 instance SizeProp (Error :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (Error :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp a@(C' _) = sizePropDefault a
 
 instance AlphaEq dom dom dom env => AlphaEq Error Error dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance (AlphaEq dom dom dom env) => AlphaEq Error Error dom env #-}
 
-instance ((Error :|| Type) :<: dom, Optimize dom dom)
+instance ((Error :|| Type) :<: dom, OptimizeSuper dom)
     => Optimize (Error :|| Type) dom
   where
+    {-# SPECIALIZE instance ((Error :|| Type) :<: dom, OptimizeSuper dom) =>
+          Optimize (Error :|| Type) dom #-}
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-

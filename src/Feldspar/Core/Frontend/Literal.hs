@@ -33,24 +33,29 @@
 
 module Feldspar.Core.Frontend.Literal where
 
-import Language.Syntactic
-import Feldspar.Core.Constructs.Literal
-import Feldspar.Core.Constructs
-import Feldspar.Core.Interpretation
+import Language.Syntactic (Syntactic(..),appSymC)
+import Feldspar.Core.Constructs.Literal (Literal(..))
+import Feldspar.Core.Constructs (Data,Syntax,sugarSymF,FeldDomain)
+import Feldspar.Core.Interpretation (c')
 
 value :: Syntax a => Internal a -> a
 value = sugarSymF . Literal
+{-# INLINABLE value #-}
 
 false :: Data Bool
 false = value False
+{-# INLINABLE false #-}
 
 true :: Data Bool
 true = value True
+{-# INLINABLE true #-}
 
 instance Syntactic ()
   where
+    {-# SPECIALIZE instance Syntactic () #-}
     type Domain ()   = FeldDomain
     type Internal () = ()
     desugar = appSymC . c' . Literal
-    sugar _ = ()
-
+    sugar = const ()
+    {-# INLINABLE sugar #-}
+    {-# INLINABLE desugar #-}

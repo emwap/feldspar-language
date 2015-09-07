@@ -24,22 +24,28 @@ data Switch a
 
 instance Semantic Switch
   where
+    {-# SPECIALIZE instance Semantic Switch #-}
+    {-# INLINABLE semantics #-}
     semantics Switch = Sem "switch" id
 
 semanticInstances ''Switch
 
-instance EvalBind Switch where evalBindSym = evalBindSymDefault
+instance EvalBind Switch where
+  {-# SPECIALIZE instance EvalBind Switch #-}
 
 instance AlphaEq dom dom dom env => AlphaEq Switch Switch dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq Switch Switch dom env #-}
 
-instance Sharable Switch
+instance Sharable Switch where {-# SPECIALIZE instance Sharable Switch #-}
 
-instance Cumulative Switch
+instance Cumulative Switch where {-# SPECIALIZE instance Cumulative Switch #-}
 
 instance SizeProp (Switch :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (Switch :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' Switch) (WrapFull sz :* Nil) = infoSize sz
 
 instance
@@ -50,6 +56,11 @@ instance
     ) =>
       Optimize (Switch :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (Switch    :|| Type) :<: dom
+                            , (EQ        :|| Type) :<: dom
+                            , (Condition :|| Type) :<: dom
+                            , OptimizeSuper dom
+                            ) => Optimize (Switch :|| Type) dom #-}
     -- If the arguments still have the shape of a condition tree (right
     -- spine), keep it as a Switch otherwise just return the expressions within
     constructFeatOpt opts sym@(C' Switch) args@((cond :$ (op :$ _ :$ s) :$ _ :$ f ) :* Nil)
@@ -59,8 +70,10 @@ instance
         = constructFeatUnOptDefault opts sym args
 
     constructFeatOpt _ (C' Switch) (a :* Nil) = return a
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
+    {-# INLINABLE constructFeatUnOpt #-}
 
 isTree :: ( (EQ        :|| Type) :<: dom
           , (Condition :|| Type) :<: dom

@@ -41,5 +41,5 @@ import Feldspar.Core.Types
 import Feldspar.Core.Constructs
 import Feldspar.Core.Constructs.Tuple ()
 
-instance TupleSat FeldDomain Type
-
+instance TupleSat FeldDomain Type where
+  {-# SPECIALIZE instance TupleSat FeldDomain Type #-}

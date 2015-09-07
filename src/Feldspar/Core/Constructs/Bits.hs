@@ -40,6 +40,7 @@
 -- | Implementation of constructs and operations on 'Bits'
 module Feldspar.Core.Constructs.Bits
     ( BITS (..)
+    , BitsSuper
     ) where
 
 import Data.Typeable
@@ -62,35 +63,39 @@ import Data.Bits
 type FiniteBits b = Bits b
 #endif
 
+type BitsSuper a = (Type a, Bits a, BoundedInt a, Size a ~ Range a)
+
 -- | Bits constructs
 data BITS a
   where
-    BAnd          :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> a :-> Full a)
-    BOr           :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> a :-> Full a)
-    BXor          :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> a :-> Full a)
-    Complement    :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :->       Full a)
+    BAnd          :: (BitsSuper a) => BITS (a :-> a :-> Full a)
+    BOr           :: (BitsSuper a) => BITS (a :-> a :-> Full a)
+    BXor          :: (BitsSuper a) => BITS (a :-> a :-> Full a)
+    Complement    :: (BitsSuper a) => BITS (a :->       Full a)
 
-    Bit           :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (Index :->       Full a)
-    SetBit        :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> Index :-> Full a)
-    ClearBit      :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> Index :-> Full a)
-    ComplementBit :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> Index :-> Full a)
-    TestBit       :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> Index :-> Full Bool)
+    Bit           :: (BitsSuper a) => BITS (Index :->       Full a)
+    SetBit        :: (BitsSuper a) => BITS (a :-> Index :-> Full a)
+    ClearBit      :: (BitsSuper a) => BITS (a :-> Index :-> Full a)
+    ComplementBit :: (BitsSuper a) => BITS (a :-> Index :-> Full a)
+    TestBit       :: (BitsSuper a) => BITS (a :-> Index :-> Full Bool)
 
-    ShiftLU       :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> Index :-> Full a)
-    ShiftRU       :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> Index :-> Full a)
-    ShiftL        :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> IntN  :-> Full a)
-    ShiftR        :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> IntN  :-> Full a)
-    RotateLU      :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> Index :-> Full a)
-    RotateRU      :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> Index :-> Full a)
-    RotateL       :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> IntN  :-> Full a)
-    RotateR       :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> IntN  :-> Full a)
-    ReverseBits   :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :->           Full a)
+    ShiftLU       :: (BitsSuper a) => BITS (a :-> Index :-> Full a)
+    ShiftRU       :: (BitsSuper a) => BITS (a :-> Index :-> Full a)
+    ShiftL        :: (BitsSuper a) => BITS (a :-> IntN  :-> Full a)
+    ShiftR        :: (BitsSuper a) => BITS (a :-> IntN  :-> Full a)
+    RotateLU      :: (BitsSuper a) => BITS (a :-> Index :-> Full a)
+    RotateRU      :: (BitsSuper a) => BITS (a :-> Index :-> Full a)
+    RotateL       :: (BitsSuper a) => BITS (a :-> IntN  :-> Full a)
+    RotateR       :: (BitsSuper a) => BITS (a :-> IntN  :-> Full a)
+    ReverseBits   :: (BitsSuper a) => BITS (a :->           Full a)
 
-    BitScan       :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> Full Index)
-    BitCount      :: (Type a, Bits a, BoundedInt a, Size a ~ Range a) => BITS (a :-> Full Index)
+    BitScan       :: (BitsSuper a) => BITS (a :-> Full Index)
+    BitCount      :: (BitsSuper a) => BITS (a :-> Full Index)
 
 instance Semantic BITS
   where
+    {-# SPECIALIZE instance Semantic BITS #-}
+    {-# INLINABLE semantics #-}
     semantics BAnd          = Sem "(.&.)"      (.&.)
     semantics BOr           = Sem "(.|.)"      (.|.)
     semantics BXor          = Sem "xor"        xor
@@ -113,7 +118,7 @@ instance Semantic BITS
     semantics ReverseBits   = Sem "reverseBits" evalReverseBits
 
     semantics BitScan       = Sem "bitScan"  evalBitScan
-    semantics BitCount      = Sem "bitCount" evalBitCount
+    semantics BitCount      = Sem "bitCount" (fromIntegral.popCount)
 
 liftIntWord :: (a -> Int -> b) -> a -> WordN -> b
 liftIntWord f x = f x . fromIntegral
@@ -139,26 +144,21 @@ evalBitScan b =
                      | testBit x i Prelude./= t = n
                      | otherwise                = scanLoop x t (i-1) (n+1)
 
-evalBitCount :: (FiniteBits b) => b -> WordN
-evalBitCount b = loop b (finiteBitSize b - 1) 0
-  where
-    loop x i n | i Prelude.< 0 = n
-               | testBit x i   = loop x (i-1) (n+1)
-               | otherwise     = loop x (i-1) n
-
 semanticInstances ''BITS
 
-instance EvalBind BITS where evalBindSym = evalBindSymDefault
+instance EvalBind BITS where
+  {-# SPECIALIZE instance EvalBind BITS #-}
 
 instance AlphaEq dom dom dom env => AlphaEq BITS BITS dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq BITS BITS dom env #-}
 
-instance Sharable BITS
+instance Sharable BITS where {-# SPECIALIZE instance Sharable BITS #-}
 
 instance Cumulative BITS where
-    cumulativeInc _ _ = []
-
+    {-# SPECIALIZE instance Cumulative BITS #-}
+    {-# INLINABLE cumulativeDec #-}
     cumulativeDec ShiftRU (a :* b :* Nil)
         | RangeSet r <- infoRange $ getInfo b
         , isNatural r
@@ -167,6 +167,8 @@ instance Cumulative BITS where
 
 instance SizeProp (BITS :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (BITS :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' BAnd) (WrapFull a :* WrapFull b :* Nil) = rangeAnd (infoSize a) (infoSize b)
     sizeProp (C' BOr) (WrapFull a :* WrapFull b :* Nil) = rangeOr (infoSize a) (infoSize b)
     sizeProp (C' BXor) (WrapFull a :* WrapFull b :* Nil) = rangeXor (infoSize a) (infoSize b)
@@ -190,6 +192,13 @@ instance ( (BITS  :|| Type) :<: dom
          )
       => Optimize (BITS :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (BITS  :|| Type) :<: dom
+                            , (Logic :|| Type) :<: dom
+                            , (EQ    :|| Type) :<: dom
+                            , (ORD   :|| Type) :<: dom
+                            , Cumulative dom
+                            , OptimizeSuper dom
+                            ) => Optimize (BITS :|| Type) dom #-}
     constructFeatOpt _ (C' BAnd) (a :* b :* Nil)
         | Just 0 <- viewLiteral a              = return a
         | Just x <- viewLiteral a, isAllOnes x = return b
@@ -250,8 +259,10 @@ instance ( (BITS  :|| Type) :<: dom
     constructFeatOpt opts x@(C' RotateR)  args = optZero opts x args
 
     constructFeatOpt opts feat args = constructFeatUnOpt opts feat args
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
+    {-# INLINABLE constructFeatUnOpt #-}
 
 
 isAllOnes :: (Num a, Bits a) => a -> Bool

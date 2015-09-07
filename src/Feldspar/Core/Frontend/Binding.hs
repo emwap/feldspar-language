@@ -36,16 +36,18 @@ import Feldspar.Core.Constructs
 -- | Share an expression in the scope of a function
 share :: (Syntax a, Syntax b) => a -> (a -> b) -> b
 share = sugarSymC Let
+{-# INLINABLE share #-}
 
 -- | Share the intermediate result when composing functions
 (.<) :: (Syntax b, Syntax c) => (b -> c) -> (a -> b) -> a -> c
 (.<) f g a = share (g a) f
+{-# INLINABLE (.<) #-}
 
 infixr 9 .<
 
 -- | Share an expression in the scope of a function
 ($<) :: (Syntax a, Syntax b) => (a -> b) -> a -> b
 ($<) = flip share
+{-# INLINABLE ($<) #-}
 
 infixr 0 $<
-

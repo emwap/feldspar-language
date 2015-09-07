@@ -51,26 +51,45 @@ data ConditionM m a
 
 instance Semantic (ConditionM m)
   where
+    {-# SPECIALIZE instance Semantic (ConditionM m) #-}
+    {-# INLINABLE semantics #-}
     semantics ConditionM = Sem "if" ifM
       where
         ifM cond e t = if cond then e else t
 
-instance Equality   (ConditionM m) where equal = equalDefault; exprHash = exprHashDefault
-instance Render     (ConditionM m) where renderSym  = renderSymDefault
-                                         renderArgs = renderArgsDefault
-instance StringTree (ConditionM m)
-instance Eval       (ConditionM m) where evaluate = evaluateDefault
-instance EvalBind   (ConditionM m) where evalBindSym = evalBindSymDefault
-instance Sharable   (ConditionM m)
-instance Cumulative  (ConditionM m)
+instance Equality (ConditionM m) where
+  {-# SPECIALIZE instance Equality (ConditionM m) #-}
+  {-# INLINABLE equal #-}
+  {-# INLINABLE exprHash #-}
+  equal = equalDefault
+  exprHash = exprHashDefault
+instance Render (ConditionM m) where
+  {-# SPECIALIZE instance Render (ConditionM m) #-}
+  {-# INLINABLE renderSym #-}
+  renderSym = renderSymDefault
+instance StringTree (ConditionM m) where
+  {-# SPECIALIZE instance StringTree (ConditionM m) #-}
+instance Eval (ConditionM m) where
+  {-# SPECIALIZE instance Eval (ConditionM m) #-}
+  {-# INLINABLE evaluate #-}
+  evaluate = evaluateDefault
+instance EvalBind (ConditionM m) where
+  {-# SPECIALIZE instance EvalBind (ConditionM m) #-}
+instance Sharable (ConditionM m) where
+  {-# SPECIALIZE instance Sharable (ConditionM m) #-}
+instance Cumulative (ConditionM m) where
+  {-# SPECIALIZE instance Cumulative (ConditionM m) #-}
 
 instance AlphaEq dom dom dom env =>
     AlphaEq (ConditionM m) (ConditionM m) dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance (AlphaEq dom dom dom env) =>
+          AlphaEq (ConditionM m) (ConditionM m) dom env #-}
 
 instance LatticeSize1 m => SizeProp (ConditionM m)
   where
+    {-# SPECIALIZE instance (LatticeSize1 m) => SizeProp (ConditionM m) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp ConditionM (_ :* WrapFull t :* WrapFull f :* Nil) =
         mergeSize t (infoSize t) (infoSize f)
 
@@ -81,6 +100,12 @@ instance ( ConditionM m :<: dom
          )
       => Optimize (ConditionM m) dom
   where
+    {-# SPECIALIZE instance ( ConditionM m :<: dom
+                            , (Logic :|| Type) :<: dom
+                            , OptimizeSuper dom
+                            , LatticeSize1 m
+                            )
+                            => Optimize (ConditionM m) dom #-}
     constructFeatOpt _ ConditionM (c :* t :* f :* Nil)
         | Just cl <- viewLiteral c = return $ if cl then t else f
 
@@ -92,8 +117,9 @@ instance ( ConditionM m :<: dom
         = constructFeat opts cond (c :* f :* t :* Nil)
 
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts ConditionM args@(_ :* t :* _ :* Nil)
         | Info {infoType = tType} <- getInfo t
         = constructFeatUnOptDefaultTyp opts tType ConditionM args
-
+    {-# INLINABLE constructFeatUnOpt #-}

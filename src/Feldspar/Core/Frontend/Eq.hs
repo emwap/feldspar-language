@@ -48,30 +48,38 @@ class (Type a) => Eq a
   where
     (==) :: Data a -> Data a -> Data Bool
     (==) = sugarSymF Equal
+    {-# INLINABLE (==) #-}
     (/=) :: Data a -> Data a -> Data Bool
     (/=) = sugarSymF NotEqual
+    {-# INLINABLE (/=) #-}
 
-instance Eq ()
-instance Eq Bool
-instance Eq Float
-instance Eq Double
-instance Eq Word8
-instance Eq Word16
-instance Eq Word32
-instance Eq Word64
-instance Eq WordN
-instance Eq Int8
-instance Eq Int16
-instance Eq Int32
-instance Eq Int64
-instance Eq IntN
+instance Eq () where {-# SPECIALIZE instance Eq () #-}
+instance Eq Bool where {-# SPECIALIZE instance Eq Bool #-}
+instance Eq Float where {-# SPECIALIZE instance Eq Float #-}
+instance Eq Double where {-# SPECIALIZE instance Eq Double #-}
+instance Eq Word8 where {-# SPECIALIZE instance Eq Word8 #-}
+instance Eq Word16 where {-# SPECIALIZE instance Eq Word16 #-}
+instance Eq Word32 where {-# SPECIALIZE instance Eq Word32 #-}
+instance Eq Word64 where {-# SPECIALIZE instance Eq Word64 #-}
+instance Eq WordN where {-# SPECIALIZE instance Eq WordN #-}
+instance Eq Int8 where {-# SPECIALIZE instance Eq Int8 #-}
+instance Eq Int16 where {-# SPECIALIZE instance Eq Int16 #-}
+instance Eq Int32 where {-# SPECIALIZE instance Eq Int32 #-}
+instance Eq Int64 where {-# SPECIALIZE instance Eq Int64 #-}
+instance Eq IntN where {-# SPECIALIZE instance Eq IntN #-}
 
-instance (Eq a, Eq b)                               => Eq (a,b)
-instance (Eq a, Eq b, Eq c)                         => Eq (a,b,c)
-instance (Eq a, Eq b, Eq c, Eq d)                   => Eq (a,b,c,d)
-instance (Eq a, Eq b, Eq c, Eq d, Eq e)             => Eq (a,b,c,d,e)
-instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f)       => Eq (a,b,c,d,e,f)
-instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => Eq (a,b,c,d,e,f,g)
+instance (Eq a, Eq b)                               => Eq (a,b) where
+  {-# SPECIALIZE instance (Eq a, Eq b) => Eq (a,b) #-}
+instance (Eq a, Eq b, Eq c)                         => Eq (a,b,c) where
+  {-# SPECIALIZE instance (Eq a, Eq b, Eq c) => Eq (a,b,c) #-}
+instance (Eq a, Eq b, Eq c, Eq d)                   => Eq (a,b,c,d) where
+  {-# SPECIALIZE instance (Eq a, Eq b, Eq c, Eq d) => Eq (a,b,c,d) #-}
+instance (Eq a, Eq b, Eq c, Eq d, Eq e)             => Eq (a,b,c,d,e) where
+  {-# SPECIALIZE instance (Eq a, Eq b, Eq c, Eq d, Eq e) => Eq (a,b,c,d,e) #-}
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f)       => Eq (a,b,c,d,e,f) where
+  {-# SPECIALIZE instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => Eq (a,b,c,d,e,f) #-}
+instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => Eq (a,b,c,d,e,f,g) where
+  {-# SPECIALIZE instance (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => Eq (a,b,c,d,e,f,g) #-}
 
-instance (Eq a, P.RealFloat a) => Eq (Complex a)
-
+instance (Eq a, P.RealFloat a) => Eq (Complex a) where
+  {-# SPECIALIZE instance (Eq a, P.RealFloat a) => Eq (Complex a) #-}

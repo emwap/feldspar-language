@@ -40,26 +40,27 @@ module Feldspar.Core.Constructs.Condition
 
 import Language.Syntactic
 import Language.Syntactic.Constructs.Binding hiding (subst)
-import Language.Syntactic.Constructs.Binding.HigherOrder (CLambda(..))
-import Language.Syntactic.Constructs.Literal
-import Language.Syntactic.Constructs.Condition
+import Language.Syntactic.Constructs.Binding.HigherOrder (CLambda)
+import Language.Syntactic.Constructs.Condition (Condition(..))
 
-import Feldspar.Lattice
-import Feldspar.Core.Types
+import Feldspar.Lattice ((\/))
+import Feldspar.Core.Types (Type,TypeRep(BoolType))
 import Feldspar.Core.Interpretation
-import Feldspar.Core.Constructs.Eq
-import Feldspar.Core.Constructs.Ord
-import Feldspar.Core.Constructs.Logic
+import Feldspar.Core.Constructs.Eq (EQ(..))
+import Feldspar.Core.Constructs.Ord (ORD(..))
+import Feldspar.Core.Constructs.Logic (Logic(..))
 import Feldspar.Core.Constructs.Binding (subst)
 
-import Data.Typeable (Typeable)
+instance Sharable Condition where
+  {-# SPECIALIZE instance Sharable Condition #-}
 
-instance Sharable Condition
-
-instance Cumulative Condition
+instance Cumulative Condition where
+  {-# SPECIALIZE instance Cumulative Condition #-}
 
 instance SizeProp (Condition :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (Condition :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' Condition) (_ :* WrapFull t :* WrapFull f :* Nil)
         = infoSize t \/ infoSize f
 
@@ -74,6 +75,15 @@ instance ( (Condition :|| Type) :<: dom
          )
       => Optimize (Condition :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (Condition :|| Type) :<: dom
+                            , (Logic     :|| Type) :<: dom
+                            , (EQ        :|| Type) :<: dom
+                            , (ORD       :|| Type) :<: dom
+                            , (Variable  :|| Type) :<: dom
+                            , CLambda Type :<: dom
+                            , Cumulative dom
+                            , OptimizeSuper dom
+                            ) => Optimize (Condition :|| Type) dom #-}
     -- If the condition is a variable, substitute for True/False in each
     -- branch
     optimizeFeat opts s@(C' Condition) (c :* t :* f :* Nil)
@@ -105,12 +115,13 @@ instance ( (Condition :|| Type) :<: dom
         = optimizeFeatDefault opts s $ c :* t :* subst v b f :* Nil
 
     optimizeFeat opts sym args = optimizeFeatDefault opts sym args
+    {-# INLINABLE optimizeFeat #-}
 
     -- If the condition is a literal, shortcut the condition
-    constructFeatOpt opts (C' Condition) (c :* t :* f :* Nil)
+    constructFeatOpt _ (C' Condition) (c :* t :* f :* Nil)
         | Just cl <- viewLiteral c = return $ if cl then t else f
 
-    -- If the branches a Boolean literals, shortcut as a truth table
+    -- If the branches are Boolean literals, shortcut as a truth table
     constructFeatOpt opts (C' Condition) (c :* t :* f :* Nil)
         | BoolType <- infoType (getInfo t)
         , Just tl <- viewLiteral t
@@ -118,6 +129,7 @@ instance ( (Condition :|| Type) :<: dom
         = case (tl,fl) of
             (True,False) -> return c
             (False,True) -> constructFeat opts (c' Not) (c :* Nil)
+            (_,_)        -> return $ literalDecor tl
 
     -- It the branches are equal, the choice doesn't matter
     constructFeatOpt _ (C' Condition) (_ :* t :* f :* Nil)
@@ -129,6 +141,7 @@ instance ( (Condition :|| Type) :<: dom
         = constructFeat opts cond (c :* f :* t :* Nil)
 
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-
+    {-# INLINABLE constructFeatUnOpt #-}

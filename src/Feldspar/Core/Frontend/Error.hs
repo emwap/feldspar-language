@@ -34,15 +34,18 @@ import Feldspar.Core.Frontend.Literal
 
 undef :: Syntax a => a
 undef = sugarSymF Undefined
+{-# INLINABLE undef #-}
 
 -- | Assert that the condition holds or fail with message
 assertMsg :: Syntax a => String -> Data Bool -> a -> a
 assertMsg = sugarSymF . Assert
+{-# INLINABLE assertMsg #-}
 
 -- | Assert that the condition holds, the conditions string representation is used as the message
 assert :: Syntax a => Data Bool -> a -> a
 assert cond = assertMsg (show cond) cond
+{-# INLINABLE assert #-}
 
 err :: Syntax a => String -> a
 err msg = assertMsg msg false undef
-
+{-# INLINABLE err #-}

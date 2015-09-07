@@ -60,6 +60,8 @@ data MutableArray a
 
 instance Semantic MutableArray
   where
+    {-# SPECIALIZE instance Semantic MutableArray #-}
+    {-# INLINABLE semantics #-}
     semantics NewArr    = Sem "newMArr"  $ \l -> newArray (mkBounds $ toInteger l)
     semantics NewArr_   = Sem "newMArr_" $ \l -> newListArray (mkBounds $ toInteger l)
         [error $ "Undefined element at index " ++ show (i::Integer) | i <- [0..]]
@@ -74,18 +76,22 @@ mkBounds l = (0, pred l)
 
 semanticInstances ''MutableArray
 
-instance EvalBind MutableArray where evalBindSym = evalBindSymDefault
+instance EvalBind MutableArray where
+  {-# SPECIALIZE instance EvalBind MutableArray #-}
 
 instance AlphaEq dom dom dom env => AlphaEq MutableArray MutableArray dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq MutableArray MutableArray dom env #-}
 
-instance Sharable MutableArray
+instance Sharable MutableArray where {-# SPECIALIZE instance Sharable MutableArray #-}
 
-instance Cumulative MutableArray
+instance Cumulative MutableArray where {-# SPECIALIZE instance Cumulative MutableArray #-}
 
 instance SizeProp MutableArray
   where
+    {-# SPECIALIZE instance SizeProp MutableArray #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp NewArr  (WrapFull len :* _ :* Nil) = infoSize len :> universal
       -- Note: The length isn't mutable, so it can be given a non-universal size.
     sizeProp NewArr_ (WrapFull len :* Nil)      = infoSize len :> universal
@@ -97,9 +103,11 @@ instance SizeProp MutableArray
 
 instance (MutableArray :<: dom, Optimize dom dom) => Optimize MutableArray dom
   where
+    {-# SPECIALIZE instance (MutableArray :<: dom, Optimize dom dom) =>
+          Optimize MutableArray dom #-}
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts NewArr    args = constructFeatUnOptDefaultTyp opts (MutType $ MArrType typeRep) NewArr args
     constructFeatUnOpt opts NewArr_   args = constructFeatUnOptDefaultTyp opts (MutType $ MArrType typeRep) NewArr_ args
     constructFeatUnOpt opts GetArr    args = constructFeatUnOptDefaultTyp opts (MutType typeRep) GetArr args
     constructFeatUnOpt opts SetArr    args = constructFeatUnOptDefaultTyp opts (MutType typeRep) SetArr args
     constructFeatUnOpt opts ArrLength args = constructFeatUnOptDefaultTyp opts (MutType typeRep) ArrLength args
-

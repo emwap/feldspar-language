@@ -60,24 +60,30 @@ data Logic a
 
 instance Semantic Logic
   where
+    {-# SPECIALIZE instance Semantic Logic #-}
+    {-# INLINABLE semantics #-}
     semantics And = Sem "(&&)" (&&)
     semantics Or  = Sem "(||)" (||)
     semantics Not = Sem "not"  not
 
 semanticInstances ''Logic
 
-instance EvalBind Logic where evalBindSym = evalBindSymDefault
+instance EvalBind Logic where
+  {-# SPECIALIZE instance EvalBind Logic #-}
 
 instance AlphaEq dom dom dom env => AlphaEq Logic Logic dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance (AlphaEq dom dom dom env) =>
+          AlphaEq Logic Logic dom env #-}
 
-instance Sharable Logic
+instance Sharable Logic where {-# SPECIALIZE instance Sharable Logic #-}
 
-instance Cumulative Logic
+instance Cumulative Logic where {-# SPECIALIZE instance Cumulative Logic #-}
 
 instance SizeProp (Logic :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (Logic :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp a@(C' _) args = sizePropDefault a args
 
 instance ( (Logic :|| Type) :<: dom
@@ -88,6 +94,12 @@ instance ( (Logic :|| Type) :<: dom
          )
       => Optimize (Logic :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (Logic :|| Type) :<: dom
+                            , (EQ    :|| Type) :<: dom
+                            , (ORD   :|| Type) :<: dom
+                            , Cumulative dom
+                            , OptimizeSuper dom
+                            ) => Optimize (Logic :|| Type) dom #-}
     constructFeatOpt _ (C' And) (a :* b :* Nil)
         | Just True  <- viewLiteral a = return b
         | Just False <- viewLiteral a = return a
@@ -114,6 +126,7 @@ instance ( (Logic :|| Type) :<: dom
         | Just (C' GTE)      <- prjF op = constructFeat opts (c' LTH)      (a :* b :* Nil)
 
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-
+    {-# INLINABLE constructFeatUnOpt #-}

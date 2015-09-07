@@ -70,40 +70,65 @@ class (Type a, Num a, Num (Size a)) => Numeric a
   where
     fromIntegerNum :: Integer -> Data a
     fromIntegerNum =  value . fromInteger
-    absNum         :: Data a -> Data a
+    {-# INLINABLE fromIntegerNum #-}
+    absNum         :: (Num (Size a)) => Data a -> Data a
     absNum         =  sugarSymF Abs
+    {-# INLINABLE absNum #-}
     signumNum      :: Data a -> Data a
     signumNum      =  sugarSymF Sign
+    {-# INLINABLE signumNum #-}
     addNum         :: Data a -> Data a -> Data a
     addNum         =  sugarSymF Add
+    {-# INLINABLE addNum #-}
     subNum         :: Data a -> Data a -> Data a
     subNum         =  sugarSymF Sub
+    {-# INLINABLE subNum #-}
     mulNum         :: Data a -> Data a -> Data a
     mulNum         =  sugarSymF Mul
+    {-# INLINABLE mulNum #-}
 
-instance Numeric Word8
-instance Numeric Word16
-instance Numeric Word32
-instance Numeric Word64
-instance Numeric WordN
-instance Numeric Int8
-instance Numeric Int16
-instance Numeric Int32
-instance Numeric Int64
-instance Numeric IntN
+instance Numeric Word8 where {-# SPECIALIZE instance Numeric Word8 #-}
+instance Numeric Word16 where {-# SPECIALIZE instance Numeric Word16 #-}
+instance Numeric Word32 where {-# SPECIALIZE instance Numeric Word32 #-}
+instance Numeric Word64 where {-# SPECIALIZE instance Numeric Word64 #-}
+instance Numeric WordN where {-# SPECIALIZE instance Numeric WordN #-}
+instance Numeric Int8 where {-# SPECIALIZE instance Numeric Int8 #-}
+instance Numeric Int16 where {-# SPECIALIZE instance Numeric Int16 #-}
+instance Numeric Int32 where {-# SPECIALIZE instance Numeric Int32 #-}
+instance Numeric Int64 where {-# SPECIALIZE instance Numeric Int64 #-}
+instance Numeric IntN where {-# SPECIALIZE instance Numeric IntN #-}
 
-instance Numeric Float
-instance Numeric Double
+instance Numeric Float where {-# SPECIALIZE instance Numeric Float #-}
+instance Numeric Double where {-# SPECIALIZE instance Numeric Double #-}
 
-instance (Type a, RealFloat a) => Numeric (Complex a)
+instance (Type a, RealFloat a) => Numeric (Complex a) where
+  {-# SPECIALIZE instance Numeric (Complex Float) #-}
+  {-# SPECIALIZE instance Numeric (Complex Double) #-}
 
 instance (Numeric a) => Num (Data a)
   where
+    {-# SPECIALIZE instance (Numeric a) => Num (Data a) #-}
+    {-# SPECIALIZE instance Num (Data Word8) #-}
+    {-# SPECIALIZE instance Num (Data Word16) #-}
+    {-# SPECIALIZE instance Num (Data Word32) #-}
+    {-# SPECIALIZE instance Num (Data Word64) #-}
+    {-# SPECIALIZE instance Num (Data WordN) #-}
+    {-# SPECIALIZE instance Num (Data Int8) #-}
+    {-# SPECIALIZE instance Num (Data Int16) #-}
+    {-# SPECIALIZE instance Num (Data Int32) #-}
+    {-# SPECIALIZE instance Num (Data Int64) #-}
+    {-# SPECIALIZE instance Num (Data IntN) #-}
+    {-# SPECIALIZE instance Num (Data Float) #-}
+    {-# SPECIALIZE instance Num (Data Double) #-}
+    {-# INLINABLE fromInteger #-}
+    {-# INLINABLE abs #-}
+    {-# INLINABLE signum #-}
+    {-# INLINABLE (+) #-}
+    {-# INLINABLE (-) #-}
+    {-# INLINABLE (*) #-}
     fromInteger = fromIntegerNum
     abs         = absNum
     signum      = signumNum
     (+)         = addNum
     (-)         = subNum
     (*)         = mulNum
-
-

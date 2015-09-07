@@ -85,6 +85,11 @@ infixr 5 :>
 
 instance (Lattice a, Lattice b) => Lattice (a :> b)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b) => Lattice (a :> b) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = bot :> bot
     top = top :> top
     (a1:>a2) \/ (b1:>b2) = (a1 \/ b1) :> (a2 \/ b2)
@@ -439,9 +444,13 @@ instance Show (TypeRep a)
 
 argType :: TypeRep (a -> b) -> TypeRep a
 argType (FunType ta _) = ta
+argType t = error $ "Not a function type " ++ show t
+{-# INLINABLE argType #-}
 
 resType :: TypeRep (a -> b) -> TypeRep b
 resType (FunType _ tb) = tb
+resType t = error $ "Not a function type " ++ show t
+{-# INLINABLE resType #-}
 
 -- | Type equality witness
 data TypeEq a b
@@ -456,7 +465,7 @@ defaultSize FloatType = universal
 defaultSize DoubleType = universal
 defaultSize (ComplexType _) = universal
 defaultSize (ArrayType t) = universal :> defaultSize t
---defaultSize (TargetArrType n t) = universal :> defaultSize t -- TODO
+-- defaultSize (TargetArrType n t) = universal :> defaultSize t -- TODO
 defaultSize (Tup2Type ta tb) =  ( defaultSize ta
                                 , defaultSize tb
                                 )
@@ -612,6 +621,7 @@ signEq :: Signedness s1 -> Signedness s2 -> Maybe (TypeEq s1 s2)
 signEq U U = Just TypeEq
 signEq S S = Just TypeEq
 signEq _ _ = Nothing
+{-# INLINABLE signEq #-}
 
 -- | Type equality on 'BitWidth'
 widthEq :: BitWidth n1 -> BitWidth n2 -> Maybe (TypeEq n1 n2)
@@ -621,6 +631,7 @@ widthEq N32     N32     = Just TypeEq
 widthEq N64     N64     = Just TypeEq
 widthEq NNative NNative = Just TypeEq
 widthEq _ _ = Nothing
+{-# INLINABLE widthEq #-}
 
 -- | Type equality on 'TypeRep'
 typeEq :: TypeRep a -> TypeRep b -> Maybe (TypeEq a b)
@@ -865,35 +876,146 @@ class (Eq a, Show a, Typeable a, Show (Size a), Lattice (Size a)) => Type a
     sizeOf   :: a -> Size a
     toTarget :: BitWidth n -> a -> TargetType n a
 
-instance Type ()      where typeRep = UnitType;          sizeOf _ = AnySize;      toTarget _ = id
-instance Type Bool    where typeRep = BoolType;          sizeOf _ = AnySize;      toTarget _ = id
-instance Type Word8   where typeRep = IntType U N8;      sizeOf = singletonRange; toTarget _ = id
-instance Type Int8    where typeRep = IntType S N8;      sizeOf = singletonRange; toTarget _ = id
-instance Type Word16  where typeRep = IntType U N16;     sizeOf = singletonRange; toTarget _ = id
-instance Type Int16   where typeRep = IntType S N16;     sizeOf = singletonRange; toTarget _ = id
-instance Type Word32  where typeRep = IntType U N32;     sizeOf = singletonRange; toTarget _ = id
-instance Type Int32   where typeRep = IntType S N32;     sizeOf = singletonRange; toTarget _ = id
-instance Type Word64  where typeRep = IntType U N64;     sizeOf = singletonRange; toTarget _ = id
-instance Type Int64   where typeRep = IntType S N64;     sizeOf = singletonRange; toTarget _ = id
-instance Type WordN   where typeRep = IntType U NNative; sizeOf = singletonRange; toTarget = fromWordN
-instance Type IntN    where typeRep = IntType S NNative; sizeOf = singletonRange; toTarget = fromIntN
-instance Type Float   where typeRep = FloatType;         sizeOf _ = AnySize;      toTarget _ = id
-instance Type Double  where typeRep = DoubleType;        sizeOf _ = AnySize;      toTarget _ = id
+instance Type ()      where
+  {-# SPECIALIZE instance Type () #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = UnitType
+  sizeOf _ = AnySize
+  toTarget _ = id
+instance Type Bool    where
+  {-# SPECIALIZE instance Type Bool #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = BoolType
+  sizeOf _ = AnySize
+  toTarget _ = id
+instance Type Word8   where
+  {-# SPECIALIZE instance Type Word8 #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = IntType U N8
+  sizeOf = singletonRange
+  toTarget _ = id
+instance Type Int8    where
+  {-# SPECIALIZE instance Type Int8 #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = IntType S N8
+  sizeOf = singletonRange
+  toTarget _ = id
+instance Type Word16  where
+  {-# SPECIALIZE instance Type Word16 #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = IntType U N16
+  sizeOf = singletonRange
+  toTarget _ = id
+instance Type Int16   where
+  {-# SPECIALIZE instance Type Int16 #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = IntType S N16
+  sizeOf = singletonRange
+  toTarget _ = id
+instance Type Word32  where
+  {-# SPECIALIZE instance Type Word32 #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = IntType U N32
+  sizeOf = singletonRange
+  toTarget _ = id
+instance Type Int32   where
+  {-# SPECIALIZE instance Type Int32 #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = IntType S N32
+  sizeOf = singletonRange
+  toTarget _ = id
+instance Type Word64  where
+  {-# SPECIALIZE instance Type Word64 #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = IntType U N64
+  sizeOf = singletonRange
+  toTarget _ = id
+instance Type Int64   where
+  {-# SPECIALIZE instance Type Int64 #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = IntType S N64
+  sizeOf = singletonRange
+  toTarget _ = id
+instance Type WordN   where
+  {-# SPECIALIZE instance Type WordN #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = IntType U NNative
+  sizeOf = singletonRange
+  toTarget = fromWordN
+instance Type IntN    where
+  {-# SPECIALIZE instance Type IntN #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = IntType S NNative
+  sizeOf = singletonRange
+  toTarget = fromIntN
+instance Type Float   where
+  {-# SPECIALIZE instance Type Float #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = FloatType
+  sizeOf _ = AnySize
+  toTarget _ = id
+instance Type Double  where
+  {-# SPECIALIZE instance Type Double #-}
+  {-# INLINABLE typeRep #-}
+  {-# INLINABLE sizeOf #-}
+  {-# INLINABLE toTarget #-}
+  typeRep = DoubleType
+  sizeOf _ = AnySize
+  toTarget _ = id
 
 instance (Type a, RealFloat a) => Type (Complex a)
   where
+    {-# SPECIALIZE instance Type (Complex Float) #-}
+    {-# SPECIALIZE instance Type (Complex Double) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep             = ComplexType typeRep
     sizeOf _            = AnySize
     toTarget _ (_ :+ _) = error "TODO" -- toTarget n r :+ toTarget n i
 
 instance Type a => Type [a]
   where
+    {-# SPECIALIZE instance Type a => Type [a] #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep       = ArrayType typeRep
     sizeOf as     = singletonRange (genericLength as) :> unions (map sizeOf as)
     toTarget n as = TargetArr (genericLen n as) $ map (toTarget n) as
 
 instance (Type a, Type b) => Type (a,b)
   where
+    {-# SPECIALIZE instance (Type a, Type b) => Type (a,b) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup2Type typeRep typeRep
 
     sizeOf (a,b) =
@@ -908,6 +1030,10 @@ instance (Type a, Type b) => Type (a,b)
 
 instance (Type a, Type b, Type c) => Type (a,b,c)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c) => Type (a,b,c) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup3Type typeRep typeRep typeRep
 
     sizeOf (a,b,c) =
@@ -924,6 +1050,10 @@ instance (Type a, Type b, Type c) => Type (a,b,c)
 
 instance (Type a, Type b, Type c, Type d) => Type (a,b,c,d)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d) => Type (a,b,c,d) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup4Type typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d) =
@@ -942,6 +1072,10 @@ instance (Type a, Type b, Type c, Type d) => Type (a,b,c,d)
 
 instance (Type a, Type b, Type c, Type d, Type e) => Type (a,b,c,d,e)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d, Type e) => Type (a,b,c,d,e) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup5Type typeRep typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d,e) =
@@ -962,6 +1096,10 @@ instance (Type a, Type b, Type c, Type d, Type e) => Type (a,b,c,d,e)
 
 instance (Type a, Type b, Type c, Type d, Type e, Type f) => Type (a,b,c,d,e,f)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d, Type e, Type f) => Type (a,b,c,d,e,f) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup6Type typeRep typeRep typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d,e,f) =
@@ -984,6 +1122,10 @@ instance (Type a, Type b, Type c, Type d, Type e, Type f) => Type (a,b,c,d,e,f)
 
 instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g) => Type (a,b,c,d,e,f,g)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g) => Type (a,b,c,d,e,f,g) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup7Type typeRep typeRep typeRep typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d,e,f,g) =
@@ -1009,6 +1151,10 @@ instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g) => Type (a,b,c
 
 instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h) => Type (a,b,c,d,e,f,g,h)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h) => Type (a,b,c,d,e,f,g,h) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup8Type typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d,e,f,g,h) =
@@ -1035,6 +1181,10 @@ instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h) => Typ
 
 instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i) => Type (a,b,c,d,e,f,g,h,i)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i) => Type (a,b,c,d,e,f,g,h,i) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup9Type typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d,e,f,g,h,i) =
@@ -1063,6 +1213,10 @@ instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i
 
 instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j) => Type (a,b,c,d,e,f,g,h,i,j)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j) => Type (a,b,c,d,e,f,g,h,i,j) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup10Type typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d,e,f,g,h,i,j) =
@@ -1093,6 +1247,10 @@ instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i
 
 instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j, Type k) => Type (a,b,c,d,e,f,g,h,i,j,k)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j, Type k) => Type (a,b,c,d,e,f,g,h,i,j,k) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup11Type typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d,e,f,g,h,i,j,k) =
@@ -1125,6 +1283,10 @@ instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i
 
 instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j, Type k, Type l) => Type (a,b,c,d,e,f,g,h,i,j,k,l)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j, Type k, Type l) => Type (a,b,c,d,e,f,g,h,i,j,k,l) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup12Type typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d,e,f,g,h,i,j,k,l) =
@@ -1159,6 +1321,10 @@ instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i
 
 instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j, Type k, Type l, Type m) => Type (a,b,c,d,e,f,g,h,i,j,k,l,m)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j, Type k, Type l, Type m) => Type (a,b,c,d,e,f,g,h,i,j,k,l,m) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup13Type typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d,e,f,g,h,i,j,k,l,m) =
@@ -1195,6 +1361,10 @@ instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i
 
 instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j, Type k, Type l, Type m,Type n') => Type (a,b,c,d,e,f,g,h,i,j,k,l,m,n')
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j, Type k, Type l, Type m,Type n') => Type (a,b,c,d,e,f,g,h,i,j,k,l,m,n') #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup14Type typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d,e,f,g,h,i,j,k,l,m,n') =
@@ -1233,6 +1403,10 @@ instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i
 
 instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j, Type k, Type l, Type m, Type n', Type o) => Type (a,b,c,d,e,f,g,h,i,j,k,l,m,n',o)
   where
+    {-# SPECIALIZE instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i, Type j, Type k, Type l, Type m, Type n', Type o) => Type (a,b,c,d,e,f,g,h,i,j,k,l,m,n',o) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = Tup15Type typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep typeRep
 
     sizeOf (a,b,c,d,e,f,g,h,i,j,k,l,m,n',o) =
@@ -1273,6 +1447,10 @@ instance (Type a, Type b, Type c, Type d, Type e, Type f, Type g, Type h, Type i
 
 instance (Type a, Show (IORef a)) => Type (IORef a)
   where
+    {-# SPECIALIZE instance (Type a, Show (IORef a), Show (Size (IORef a)), Lattice (Size (IORef a))) => Type (IORef a) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = RefType typeRep
 
     sizeOf _ = universal
@@ -1281,6 +1459,10 @@ instance (Type a, Show (IORef a)) => Type (IORef a)
 
 instance Type a => Type (MArr a)
   where
+    {-# SPECIALIZE instance Type a => Type (MArr a) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = MArrType typeRep
 
     sizeOf _ = universal
@@ -1289,6 +1471,10 @@ instance Type a => Type (MArr a)
 
 instance Type a => Type (Elements a)
   where
+    {-# SPECIALIZE instance Type a => Type (Elements a) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = ElementsType typeRep
 
     sizeOf _ = universal
@@ -1297,6 +1483,10 @@ instance Type a => Type (Elements a)
 
 instance Type a => Type (IV a)
   where
+    {-# SPECIALIZE instance (Type a, Show (Size (IV a)), Lattice (Size (IV a))) => Type (IV a) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = IVarType typeRep
 
     sizeOf _ = universal
@@ -1305,6 +1495,10 @@ instance Type a => Type (IV a)
 
 instance Type a => Type (FVal a)
   where
+    {-# SPECIALIZE instance (Type a, Show (Size (FVal a)), Lattice (Size (FVal a))) => Type (FVal a) #-}
+    {-# INLINABLE typeRep #-}
+    {-# INLINABLE sizeOf #-}
+    {-# INLINABLE toTarget #-}
     typeRep = FValType typeRep
 
     sizeOf _ = universal
@@ -1314,7 +1508,8 @@ instance Type a => Type (FVal a)
 
 
 typeRepByProxy :: Type a => Proxy a -> TypeRep a
-typeRepByProxy _ = typeRep
+typeRepByProxy = const typeRep
+{-# INLINABLE typeRepByProxy #-}
 
 
 
@@ -1327,9 +1522,11 @@ data AnySize = AnySize
 
 anySizeFun :: AnySize -> AnySize
 anySizeFun AnySize = AnySize
+{-# INLINABLE anySizeFun #-}
 
 anySizeFun2 :: AnySize -> AnySize -> AnySize
 anySizeFun2 AnySize AnySize = AnySize
+{-# INLINABLE anySizeFun2 #-}
 
 instance Num AnySize
   where
@@ -1346,6 +1543,10 @@ instance Lattice AnySize
     top  = AnySize
     (\/) = anySizeFun2
     (/\) = anySizeFun2
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
 
 type family Size a
 
@@ -1407,22 +1608,28 @@ sizeToRange :: forall a . Type a => Size a -> RangeSet a
 sizeToRange sz = case typeRep :: TypeRep a of
     IntType _ _ -> RangeSet sz
     _           -> Universal
+{-# INLINABLE sizeToRange #-}
 
 
 tIntN :: Patch IntN IntN
 tIntN = id
+{-# INLINABLE tIntN #-}
 
 tWordN :: Patch WordN WordN
 tWordN = id
+{-# INLINABLE tWordN #-}
 
 tIndex :: Patch Index Index
 tIndex  = id
+{-# INLINABLE tIndex #-}
 
 tLength :: Patch Length Length
 tLength = id
+{-# INLINABLE tLength #-}
 
 tArr :: Patch a a -> Patch [a] [a]
 tArr _ = id
+{-# INLINABLE tArr #-}
 
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 708

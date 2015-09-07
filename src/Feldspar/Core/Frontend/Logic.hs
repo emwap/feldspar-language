@@ -42,19 +42,23 @@ infixr 2 ||*
 
 not :: Data Bool -> Data Bool
 not = sugarSymF Not
+{-# INLINABLE not #-}
 
 (&&) :: Data Bool -> Data Bool -> Data Bool
 (&&) = sugarSymF And
+{-# INLINABLE (&&) #-}
 
 (||) :: Data Bool -> Data Bool -> Data Bool
 (||) = sugarSymF Or
+{-# INLINABLE (||) #-}
 
 
 -- | Lazy conjunction, second argument only evaluated if necessary
 (&&*) :: Data Bool -> Data Bool -> Data Bool
 a &&* b =  a ? b $ false
+{-# INLINABLE (&&*) #-}
 
 -- | Lazy disjunction, second argument only evaluated if necessary
 (||*) :: Data Bool -> Data Bool -> Data Bool
 a ||* b = a ? true $ b
-
+{-# INLINABLE (||*) #-}

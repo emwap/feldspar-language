@@ -68,6 +68,8 @@ data NUM a
 
 instance Semantic NUM
   where
+    {-# SPECIALIZE instance Semantic NUM #-}
+    {-# INLINABLE semantics #-}
     semantics Abs  = Sem "abs" abs
     semantics Sign = Sem "signum" signum
     semantics Add  = Sem "(+)" (+)
@@ -76,18 +78,22 @@ instance Semantic NUM
 
 semanticInstances ''NUM
 
-instance EvalBind NUM where evalBindSym = evalBindSymDefault
+instance EvalBind NUM where
+  {-# SPECIALIZE instance EvalBind NUM #-}
 
 instance AlphaEq dom dom dom env => AlphaEq NUM NUM dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq NUM NUM dom env #-}
 
-instance Sharable NUM
+instance Sharable NUM where {-# SPECIALIZE instance Sharable NUM #-}
 
-instance Cumulative NUM
+instance Cumulative NUM where {-# SPECIALIZE instance Cumulative NUM #-}
 
 instance SizeProp (NUM :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (NUM :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' Abs)  (WrapFull a :* Nil)               = abs (infoSize a)
     sizeProp (C' Sign) (WrapFull a :* Nil)               = signum (infoSize a)
     sizeProp (C' Add)  (WrapFull a :* WrapFull b :* Nil) = infoSize a + infoSize b
@@ -108,6 +114,16 @@ instance ( Cumulative dom
          )
       => Optimize (NUM :|| Type) dom
   where
+    {-# SPECIALIZE instance ( Cumulative dom
+                            , (NUM      :|| Type) :<: dom
+                            , (ORD      :|| Type) :<: dom
+                            , (EQ       :|| Type) :<: dom
+                            , (BITS     :|| Type) :<: dom
+                            , (Logic    :|| Type) :<: dom
+                            , (INTEGRAL :|| Type) :<: dom
+                            , (COMPLEX :|| Type) :<: dom
+                            , OptimizeSuper dom
+                            ) => Optimize (NUM :|| Type) dom #-}
     constructFeatOpt _ (C' Abs) (a :* Nil)
         | RangeSet r <- infoRange (getInfo a)
         , isNatural r
@@ -171,7 +187,7 @@ instance ( Cumulative dom
     -- x `mod` y + y * (x `div` y) ==> x
     -- Partial index calculations materialized from contractT . expandT 2
     -- in MultiDim.hs, which is a no-op.
-    constructFeatOpt opts (C' Add) ((rem :$ a :$ b) :* (mul :$ c :$ (quot :$ d :$ e)) :* Nil)
+    constructFeatOpt _ (C' Add) ((rem :$ a :$ b) :* (mul :$ c :$ (quot :$ d :$ e)) :* Nil)
         | Just (C' Rem)  <- prjF rem
         , Just (C' Mul)  <- prjF mul
         , Just (C' Quot) <- prjF quot
@@ -278,6 +294,7 @@ instance ( Cumulative dom
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
+    {-# INLINABLE constructFeatUnOpt #-}
 
 log2 :: Integer -> Maybe Integer
 log2 n

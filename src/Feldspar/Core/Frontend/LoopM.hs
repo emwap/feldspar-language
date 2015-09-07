@@ -10,8 +10,8 @@ import Feldspar.Core.Frontend.Mutable
 
 forM :: (Syntax a) => Data Length -> (Data Index -> M a) -> M ()
 forM = sugarSymC For
+{-# INLINABLE forM #-}
 
 whileM :: Syntax a => M (Data Bool) -> M a -> M ()
 whileM = sugarSymC While
-
-
+{-# INLINABLE whileM #-}

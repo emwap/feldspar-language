@@ -43,6 +43,7 @@ import Feldspar.Core.Constructs.Switch
 -- | Select between the cases based on the value of the scrutinee.
 select :: (Eq a, Syntax b) => Data a -> [(Data a, b)] -> b -> b
 select s cs def = foldr (\(c,a) b -> c == s ? a $ b) def cs
+{-# INLINABLE select #-}
 
 {-# DEPRECATED select "select will generate a tree of if-statements. Use switch instead" #-}
 
@@ -53,4 +54,4 @@ switch :: (Eq (Internal a), Syntax a, Syntax b)
 switch def [] _ = def
 switch def cs s = let s' = resugar s
                   in sugarSymF Switch (foldr (\(c,a) b -> resugar c == s' ? a $ b) def cs)
-
+{-# INLINABLE switch #-}

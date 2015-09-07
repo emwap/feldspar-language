@@ -31,30 +31,36 @@ where
 
 import Data.Complex
 
-import Feldspar.Core.Constructs
-import Feldspar.Core.Constructs.Fractional
+import Feldspar.Core.Constructs (Data,sugarSymF)
+import Feldspar.Core.Constructs.Fractional (FRACTIONAL(..))
 
-import Feldspar.Core.Frontend.Literal
-import Feldspar.Core.Frontend.Num
+import Feldspar.Core.Frontend.Literal (value)
+import Feldspar.Core.Frontend.Num (Numeric)
 
 -- | Fractional types. The relation to the standard 'Fractional' class is
 --
 -- @instance `Fraction` a => `Fractional` (`Data` a)@
 class (Fractional a, Numeric a) => Fraction a
   where
+    {-# INLINABLE fromRationalFrac #-}
     fromRationalFrac :: Rational -> Data a
     fromRationalFrac = value . fromRational
 
+    {-# INLINABLE divFrac #-}
     divFrac :: Data a -> Data a -> Data a
     divFrac = sugarSymF DivFrac
 
-instance Fraction Float
-instance Fraction Double
+instance Fraction Float  where {-# SPECIALIZE instance Fraction Float  #-}
+instance Fraction Double where {-# SPECIALIZE instance Fraction Double #-}
 
 instance (Fraction a, RealFloat a) => Fraction (Complex a)
+  where
+    {-# SPECIALIZE instance (Fraction a, RealFloat a) => Fraction (Complex a) #-}
 
 instance (Fraction a) => Fractional (Data a)
   where
+    {-# SPECIALIZE instance (Fraction a) => Fractional (Data a) #-}
+    {-# INLINABLE fromRational #-}
+    {-# INLINABLE (/) #-}
     fromRational = fromRationalFrac
     (/)          = divFrac
-

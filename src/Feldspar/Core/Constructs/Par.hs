@@ -63,6 +63,8 @@ data ParFeature a
 
 instance Semantic ParFeature
   where
+    {-# SPECIALIZE instance Semantic ParFeature #-}
+    {-# INLINABLE semantics #-}
     semantics ParRun    = Sem "runPar" CMP.runPar
     semantics ParNew    = Sem "new" CMP.new
     semantics ParGet    = Sem "get" CMP.get
@@ -72,22 +74,26 @@ instance Semantic ParFeature
 
 semanticInstances ''ParFeature
 
-instance EvalBind ParFeature where evalBindSym = evalBindSymDefault
+instance EvalBind ParFeature where
+  {-# SPECIALIZE instance EvalBind ParFeature #-}
 
 instance AlphaEq dom dom dom env => AlphaEq ParFeature ParFeature dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq ParFeature ParFeature dom env #-}
 
-instance Sharable ParFeature
+instance Sharable ParFeature where {-# SPECIALIZE instance Sharable ParFeature #-}
 
-instance Sharable (MONAD Par)
+instance Sharable (MONAD Par) where {-# SPECIALIZE instance Sharable (MONAD Par) #-}
 
-instance Cumulative ParFeature
+instance Cumulative ParFeature where {-# SPECIALIZE instance Cumulative ParFeature #-}
 
-instance Cumulative (MONAD Par)
+instance Cumulative (MONAD Par) where {-# SPECIALIZE instance Cumulative (MONAD Par) #-}
 
 instance SizeProp ParFeature
   where
+    {-# SPECIALIZE instance SizeProp ParFeature #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp ParRun   (WrapFull a :* Nil) = infoSize a
     sizeProp ParNew   _                   = universal
     sizeProp ParGet   _                   = universal
@@ -101,6 +107,12 @@ instance ( MONAD Par :<: dom
          )
       => Optimize ParFeature dom
   where
+    {-# SPECIALIZE instance ( MONAD Par :<: dom
+                            , ParFeature :<: dom
+                            , Optimize dom dom
+                            )
+                         => Optimize ParFeature dom #-}
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts ParRun args   = constructFeatUnOptDefault opts ParRun args
     constructFeatUnOpt opts ParNew args   = constructFeatUnOptDefaultTyp opts (ParType $ IVarType typeRep) ParNew args
     constructFeatUnOpt opts ParGet args   = constructFeatUnOptDefaultTyp opts (ParType typeRep) ParGet args
@@ -113,6 +125,8 @@ monadProxy = P
 
 instance SizeProp (MONAD Par)
   where
+    {-# SPECIALIZE instance SizeProp (MONAD Par) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp Return (WrapFull a :* Nil)      = infoSize a
     sizeProp Bind   (_ :* WrapFull f :* Nil) = snd $ infoSize f
     sizeProp Then   (_ :* WrapFull b :* Nil) = infoSize b
@@ -126,6 +140,13 @@ instance ( MONAD Par :<: dom
          )
       => Optimize (MONAD Par) dom
   where
+    {-# SPECIALIZE instance ( MONAD Par :<: dom
+                            , (Variable :|| Type) :<: dom
+                            , CLambda Type :<: dom
+                            , Let :<: dom
+                            , OptimizeSuper dom
+                            )
+                         => Optimize (MONAD Par) dom #-}
     optimizeFeat opts bnd@Bind (ma :* f :* Nil) = do
         ma' <- optimizeM opts ma
         case getInfo ma' of
@@ -135,6 +156,7 @@ instance ( MONAD Par :<: dom
               Info{} -> constructFeat opts bnd (ma' :* f' :* Nil)
 
     optimizeFeat opts a args = optimizeFeatDefault opts a args
+    {-# INLINABLE optimizeFeat #-}
 
     constructFeatOpt _ Bind (ma :* (lam :$ (ret :$ var)) :* Nil)
       | Just (SubConstr2 (Lambda v1)) <- prjLambda lam
@@ -181,4 +203,4 @@ instance ( MONAD Par :<: dom
 
     constructFeatUnOpt opts When args =
         constructFeatUnOptDefaultTyp opts voidTypeRep When args
-
+    {-# INLINABLE constructFeatUnOpt #-}

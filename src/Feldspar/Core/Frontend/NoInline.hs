@@ -33,4 +33,4 @@ import Feldspar.Core.Constructs.NoInline
 
 noInline :: (Syntax a) => a -> a
 noInline = sugarSymF NoInline
-
+{-# INLINABLE noInline #-}

@@ -55,30 +55,36 @@ infix 4 >=
 class (Eq a, Prelude.Ord a, Prelude.Ord (Size a)) => Ord a where
   (<)  :: Data a -> Data a -> Data Bool
   (<)  =  sugarSymF LTH
+  {-# INLINABLE (<) #-}
   (>)  :: Data a -> Data a -> Data Bool
   (>)  =  sugarSymF GTH
+  {-# INLINABLE (>) #-}
 
   (<=) :: Data a -> Data a -> Data Bool
   (<=) =  sugarSymF LTE
+  {-# INLINABLE (<=) #-}
   (>=) :: Data a -> Data a -> Data Bool
   (>=) =  sugarSymF GTE
+  {-# INLINABLE (>=) #-}
 
   min :: Data a -> Data a -> Data a
   min = sugarSymF Min
+  {-# INLINABLE min #-}
   max :: Data a -> Data a -> Data a
   max = sugarSymF Max
+  {-# INLINABLE max #-}
 
-instance Ord ()
-instance Ord Bool
-instance Ord Word8
-instance Ord Int8
-instance Ord Word16
-instance Ord Int16
-instance Ord Word32
-instance Ord Int32
-instance Ord Word64
-instance Ord Int64
-instance Ord WordN
-instance Ord IntN
-instance Ord Float
-instance Ord Double
+instance Ord () where {-# SPECIALIZE instance Ord () #-}
+instance Ord Bool where {-# SPECIALIZE instance Ord Bool #-}
+instance Ord Word8 where {-# SPECIALIZE instance Ord Word8 #-}
+instance Ord Int8 where {-# SPECIALIZE instance Ord Int8 #-}
+instance Ord Word16 where {-# SPECIALIZE instance Ord Word16 #-}
+instance Ord Int16 where {-# SPECIALIZE instance Ord Int16 #-}
+instance Ord Word32 where {-# SPECIALIZE instance Ord Word32 #-}
+instance Ord Int32 where {-# SPECIALIZE instance Ord Int32 #-}
+instance Ord Word64 where {-# SPECIALIZE instance Ord Word64 #-}
+instance Ord Int64 where {-# SPECIALIZE instance Ord Int64 #-}
+instance Ord WordN where {-# SPECIALIZE instance Ord WordN #-}
+instance Ord IntN where {-# SPECIALIZE instance Ord IntN #-}
+instance Ord Float where {-# SPECIALIZE instance Ord Float #-}
+instance Ord Double where {-# SPECIALIZE instance Ord Double #-}

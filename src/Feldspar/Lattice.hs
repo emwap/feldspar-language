@@ -48,12 +48,19 @@ class Eq a => Lattice a
 
 empty :: Lattice a => a
 empty = bot
+{-# INLINABLE empty #-}
 
 universal :: Lattice a => a
 universal = top
+{-# INLINABLE universal #-}
 
 instance Lattice ()
   where
+    {-# SPECIALIZE instance Lattice () #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot       = ()
     top       = ()
     () \/ ()  = ()
@@ -62,6 +69,11 @@ instance Lattice ()
 -- | Lattice product
 instance (Lattice a, Lattice b) => Lattice (a,b)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b) => Lattice (a,b) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot)
     top = (top,top)
     (a1,a2) \/ (b1,b2) = (a1 \/ b1, a2 \/ b2)
@@ -70,6 +82,12 @@ instance (Lattice a, Lattice b) => Lattice (a,b)
 -- | Three-way product
 instance (Lattice a, Lattice b, Lattice c) => Lattice (a,b,c)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c) =>
+          Lattice (a,b,c) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot)
     top = (top,top,top)
     (a1,a2,a3) \/ (b1,b2,b3) = (a1 \/ b1, a2 \/ b2, a3 \/ b3)
@@ -78,6 +96,12 @@ instance (Lattice a, Lattice b, Lattice c) => Lattice (a,b,c)
 -- | Four-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d) => Lattice (a,b,c,d)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d) =>
+          Lattice (a,b,c,d) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot)
     top = (top,top,top,top)
     (a1,a2,a3,a4) \/ (b1,b2,b3,b4) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4)
@@ -86,6 +110,12 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d) => Lattice (a,b,c,d)
 -- | Five-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e) => Lattice (a,b,c,d,e)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e) =>
+          Lattice (a,b,c,d,e) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot,bot)
     top = (top,top,top,top,top)
     (a1,a2,a3,a4,a5) \/ (b1,b2,b3,b4,b5) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4, a5 \/ b5)
@@ -94,6 +124,12 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e) => Lattice (a,b
 -- | Six-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f) => Lattice (a,b,c,d,e,f)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f) =>
+          Lattice (a,b,c,d,e,f) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot,bot,bot)
     top = (top,top,top,top,top,top)
     (a1,a2,a3,a4,a5,a6) \/ (b1,b2,b3,b4,b5,b6) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4, a5 \/ b5, a6 \/ b6)
@@ -102,6 +138,12 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f) => L
 -- | Seven-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g) => Lattice (a,b,c,d,e,f,g)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g) =>
+          Lattice (a,b,c,d,e,f,g) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot,bot,bot,bot)
     top = (top,top,top,top,top,top,top)
     (a1,a2,a3,a4,a5,a6,a7) \/ (b1,b2,b3,b4,b5,b6,b7) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4, a5 \/ b5, a6 \/ b6, a7 \/ b7)
@@ -110,6 +152,12 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Latt
 -- | Eight-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h) => Lattice (a,b,c,d,e,f,g,h)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h) =>
+          Lattice (a,b,c,d,e,f,g,h) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot,bot,bot,bot,bot)
     top = (top,top,top,top,top,top,top,top)
     (a1,a2,a3,a4,a5,a6,a7,a8) \/ (b1,b2,b3,b4,b5,b6,b7,b8) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4, a5 \/ b5, a6 \/ b6, a7 \/ b7, a8 \/ b8)
@@ -118,6 +166,12 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Latt
 -- | Nine-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i) => Lattice (a,b,c,d,e,f,g,h,i)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i) =>
+          Lattice (a,b,c,d,e,f,g,h,i) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot,bot,bot,bot,bot,bot)
     top = (top,top,top,top,top,top,top,top,top)
     (a1,a2,a3,a4,a5,a6,a7,a8,a9) \/ (b1,b2,b3,b4,b5,b6,b7,b8,b9) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4, a5 \/ b5, a6 \/ b6, a7 \/ b7, a8 \/ b8, a9 \/ b9)
@@ -126,6 +180,12 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Latt
 -- | Ten-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j) => Lattice (a,b,c,d,e,f,g,h,i,j)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j) =>
+          Lattice (a,b,c,d,e,f,g,h,i,j) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot,bot,bot,bot,bot,bot,bot)
     top = (top,top,top,top,top,top,top,top,top,top)
     (a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) \/ (b1,b2,b3,b4,b5,b6,b7,b8,b9,b10) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4, a5 \/ b5, a6 \/ b6, a7 \/ b7, a8 \/ b8, a9 \/ b9, a10 \/ b10)
@@ -134,6 +194,11 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Latt
 -- | Eleven-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j, Lattice k) => Lattice (a,b,c,d,e,f,g,h,i,j,k)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j, Lattice k) => Lattice (a,b,c,d,e,f,g,h,i,j,k) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot)
     top = (top,top,top,top,top,top,top,top,top,top,top)
     (a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) \/ (b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4, a5 \/ b5, a6 \/ b6, a7 \/ b7, a8 \/ b8, a9 \/ b9, a10 \/ b10, a11 \/ b11)
@@ -142,6 +207,11 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Latt
 -- | Twelve-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j, Lattice k, Lattice l) => Lattice (a,b,c,d,e,f,g,h,i,j,k,l)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j, Lattice k, Lattice l) => Lattice (a,b,c,d,e,f,g,h,i,j,k,l) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot)
     top = (top,top,top,top,top,top,top,top,top,top,top,top)
     (a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12) \/ (b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4, a5 \/ b5, a6 \/ b6, a7 \/ b7, a8 \/ b8, a9 \/ b9, a10 \/ b10, a11 \/ b11, a12 \/ b12)
@@ -150,6 +220,11 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Latt
 -- | Thirteen-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j, Lattice k, Lattice l, Lattice m) => Lattice (a,b,c,d,e,f,g,h,i,j,k,l,m)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j, Lattice k, Lattice l, Lattice m) => Lattice (a,b,c,d,e,f,g,h,i,j,k,l,m) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot)
     top = (top,top,top,top,top,top,top,top,top,top,top,top,top)
     (a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13) \/ (b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4, a5 \/ b5, a6 \/ b6, a7 \/ b7, a8 \/ b8, a9 \/ b9, a10 \/ b10, a11 \/ b11, a12 \/ b12, a13 \/ b13)
@@ -158,6 +233,11 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Latt
 -- | Fourteen-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j, Lattice k, Lattice l, Lattice m, Lattice n) => Lattice (a,b,c,d,e,f,g,h,i,j,k,l,m,n)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j, Lattice k, Lattice l, Lattice m, Lattice n) => Lattice (a,b,c,d,e,f,g,h,i,j,k,l,m,n) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot)
     top = (top,top,top,top,top,top,top,top,top,top,top,top,top,top)
     (a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14) \/ (b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4, a5 \/ b5, a6 \/ b6, a7 \/ b7, a8 \/ b8, a9 \/ b9, a10 \/ b10, a11 \/ b11, a12 \/ b12, a13 \/ b13, a14 \/ b14)
@@ -166,6 +246,11 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Latt
 -- | Fifteen-way product
 instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j, Lattice k, Lattice l, Lattice m, Lattice n, Lattice o) => Lattice (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o)
   where
+    {-# SPECIALIZE instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Lattice g, Lattice h, Lattice i, Lattice j, Lattice k, Lattice l, Lattice m, Lattice n, Lattice o) => Lattice (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) #-}
+    {-# INLINABLE bot #-}
+    {-# INLINABLE top #-}
+    {-# INLINABLE (\/) #-}
+    {-# INLINABLE (/\) #-}
     bot = (bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot,bot)
     top = (top,top,top,top,top,top,top,top,top,top,top,top,top,top,top)
     (a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15) \/ (b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15) = (a1 \/ b1, a2 \/ b2, a3 \/ b3, a4 \/ b4, a5 \/ b5, a6 \/ b6, a7 \/ b7, a8 \/ b8, a9 \/ b9, a10 \/ b10, a11 \/ b11, a12 \/ b12, a13 \/ b13, a14 \/ b14, a15 \/ b15)
@@ -174,10 +259,12 @@ instance (Lattice a, Lattice b, Lattice c, Lattice d, Lattice e, Lattice f, Latt
 -- | Accumulated join
 unions :: Lattice a => [a] -> a
 unions = foldr (\/) bot
+{-# INLINABLE unions #-}
 
 -- | Accumulated meet
 intersections :: Lattice a => [a] -> a
 intersections = foldr (/\) top
+{-# INLINABLE intersections #-}
 
 
 

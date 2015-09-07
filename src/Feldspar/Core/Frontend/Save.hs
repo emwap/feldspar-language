@@ -44,9 +44,10 @@ import Feldspar.Core.Constructs.Save
 -- Exception: Currently constant folding does not respect 'save'.
 save :: Syntax a => a -> a
 save = sugarSymF Save
+{-# INLINABLE save #-}
 
 -- | Equivalent to 'save'. When applied to a lazy data structure, 'force' (and
 -- 'save') has the effect of forcing evaluation of the whole structure.
 force :: Syntax a => a -> a
 force = save
-
+{-# INLINABLE force #-}

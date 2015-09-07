@@ -51,7 +51,6 @@ import Language.Syntactic
 import Language.Syntactic.Constructs.Binding
 import Language.Syntactic.Constructs.Binding.HigherOrder (CLambda)
 
-import Feldspar.Lattice
 import Feldspar.Core.Types
 import Feldspar.Core.Interpretation
 import Feldspar.Core.Constructs.Binding
@@ -62,6 +61,8 @@ data MutableToPure a where
 
 instance Semantic MutableToPure
   where
+    {-# SPECIALIZE instance Semantic MutableToPure #-}
+    {-# INLINABLE semantics #-}
     semantics RunMutableArray = Sem "runMutableArray" runMutableArrayEval
     semantics WithArray       = Sem "withArray"       withArrayEval
 
@@ -78,23 +79,31 @@ withArrayEval ma f
 
 instance Typed MutableToPure
   where
+    {-# SPECIALIZE instance Typed MutableToPure #-}
+    {-# INLINABLE typeDictSym #-}
     typeDictSym RunMutableArray = Just Dict
     typeDictSym _ = Nothing
 
 semanticInstances ''MutableToPure
 
-instance EvalBind MutableToPure where evalBindSym = evalBindSymDefault
+instance EvalBind MutableToPure where
+  {-# SPECIALIZE instance EvalBind MutableToPure #-}
 
 instance AlphaEq dom dom dom env => AlphaEq MutableToPure MutableToPure dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq MutableToPure MutableToPure dom env #-}
 
-instance Sharable MutableToPure
+instance Sharable MutableToPure where
+  {-# SPECIALIZE instance Sharable MutableToPure #-}
 
-instance Cumulative MutableToPure
+instance Cumulative MutableToPure where
+  {-# SPECIALIZE instance Cumulative MutableToPure #-}
 
 instance SizeProp MutableToPure
   where
+    {-# SPECIALIZE instance SizeProp MutableToPure #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp RunMutableArray (WrapFull arr :* Nil) = infoSize arr
     sizeProp WithArray (_ :* WrapFull fun :* Nil) = snd $ infoSize fun
 
@@ -107,6 +116,13 @@ instance ( MutableToPure :<: dom
          ) =>
            Optimize MutableToPure dom
   where
+    {-# SPECIALIZE instance ( MutableToPure :<: dom
+                            , Let :<: dom
+                            , (Variable :|| Type) :<: dom
+                            , CLambda Type :<: dom
+                            , OptimizeSuper dom
+                            ) =>
+                             Optimize MutableToPure dom #-}
     optimizeFeat opts sym@WithArray (arr :* fun@(lam :$ body) :* Nil)
       | Dict <- exprDict fun
       , Dict <- exprDict body
@@ -118,7 +134,8 @@ instance ( MutableToPure :<: dom
           constructFeat opts sym (arr' :* fun' :* Nil)
 
     optimizeFeat opts sym args = optimizeFeatDefault opts sym args
+    {-# INLINABLE optimizeFeat #-}
 
     constructFeatUnOpt opts RunMutableArray args = constructFeatUnOptDefaultTyp opts typeRep RunMutableArray args
     constructFeatUnOpt opts WithArray args       = constructFeatUnOptDefaultTyp opts (MutType typeRep) WithArray args
-
+    {-# INLINABLE constructFeatUnOpt #-}

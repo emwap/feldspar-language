@@ -28,11 +28,12 @@
 
 module Feldspar.Core.Frontend.Condition where
 
-import Feldspar.Core.Constructs.Condition
-import Feldspar.Core.Constructs
+import Feldspar.Core.Constructs (Data,sugarSymF,Syntax)
+import Feldspar.Core.Constructs.Condition (Condition(..))
 
 condition :: (Syntax a) => Data Bool -> a -> a -> a
-condition c t f = sugarSymF Condition c t f
+condition = sugarSymF Condition
+{-# INLINABLE condition #-}
 
 -- | Condition operator. Use as follows:
 --
@@ -42,6 +43,6 @@ condition c t f = sugarSymF Condition c t f
 -- >   exDefault
 (?) :: (Syntax a) => Data Bool -> a -> a -> a
 (?) = condition
+{-# INLINABLE (?) #-}
 
 infixl 1 ?
-

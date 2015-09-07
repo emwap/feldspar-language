@@ -58,6 +58,8 @@ data COMPLEX a
 
 instance Semantic COMPLEX
   where
+    {-# SPECIALIZE instance Semantic COMPLEX #-}
+    {-# INLINABLE semantics #-}
     semantics MkComplex = Sem "complex"   (:+)
     semantics RealPart  = Sem "creal"     realPart
     semantics ImagPart  = Sem "cimag"     imagPart
@@ -69,24 +71,30 @@ instance Semantic COMPLEX
 
 semanticInstances ''COMPLEX
 
-instance EvalBind COMPLEX where evalBindSym = evalBindSymDefault
+instance EvalBind COMPLEX where
+  {-# SPECIALIZE instance EvalBind COMPLEX #-}
 
 instance AlphaEq dom dom dom env => AlphaEq COMPLEX COMPLEX dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq COMPLEX COMPLEX dom env #-}
 
-instance Sharable COMPLEX
+instance Sharable COMPLEX where {-# SPECIALIZE instance Sharable COMPLEX #-}
 
-instance Cumulative COMPLEX
+instance Cumulative COMPLEX where {-# SPECIALIZE instance Cumulative COMPLEX #-}
 
 instance SizeProp (COMPLEX :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (COMPLEX :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' s) = sizePropDefault s
 
 instance ( (COMPLEX :|| Type) :<: dom
          , OptimizeSuper dom)
       => Optimize (COMPLEX :|| Type) dom
   where
+    {-# SPECIALIZE instance ((COMPLEX :|| Type) :<: dom, OptimizeSuper dom) =>
+          Optimize (COMPLEX :|| Type) dom #-}
     constructFeatOpt _ (C' MkComplex) ((rp :$ a) :* (ip :$ b) :* Nil)
         | Just (C' RealPart) <- prjF rp
         , Just (C' ImagPart) <- prjF ip
@@ -120,6 +128,7 @@ instance ( (COMPLEX :|| Type) :<: dom
         = return a
 
     constructFeatOpt opts sym args = constructFeatUnOpt opts sym args
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-
+    {-# INLINABLE constructFeatUnOpt #-}

@@ -35,7 +35,8 @@ import Feldspar.Core.Constructs.Loop
 
 forLoop :: Syntax a => Data Length -> a -> (Data Index -> a -> a) -> a
 forLoop = sugarSymF ForLoop
+{-# INLINABLE forLoop #-}
 
 whileLoop :: Syntax a => a -> (a -> Data Bool) -> (a -> a) -> a
 whileLoop = sugarSymF WhileLoop
-
+{-# INLINABLE whileLoop #-}

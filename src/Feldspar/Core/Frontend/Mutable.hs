@@ -54,6 +54,9 @@ newtype M a = M { unM :: Mon FeldDomain Mut a }
 
 instance Syntax a => Syntactic (M a)
   where
+    {-# SPECIALIZE instance Syntax a => Syntactic (M a) #-}
+    {-# INLINABLE desugar #-}
+    {-# INLINABLE sugar #-}
     type Domain (M a)   = FeldDomain
     type Internal (M a) = Mut (Internal a)
     desugar = desugar . unM
@@ -61,10 +64,12 @@ instance Syntax a => Syntactic (M a)
 
 runMutable :: (Syntax a) => M a -> a
 runMutable = sugarSymC Feature.Run
+{-# INLINABLE runMutable #-}
 
 when :: Data Bool -> M () -> M ()
 when = sugarSymC Feature.When
+{-# INLINABLE when #-}
 
 unless :: Data Bool -> M () -> M ()
 unless = when . not
-
+{-# INLINABLE unless #-}

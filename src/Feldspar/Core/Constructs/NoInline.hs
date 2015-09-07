@@ -48,27 +48,35 @@ data NoInline a
 
 instance Semantic NoInline
   where
+    {-# SPECIALIZE instance Semantic NoInline #-}
+    {-# INLINABLE semantics #-}
     semantics NoInline  = Sem "NoInline" id
 
 semanticInstances ''NoInline
 
-instance EvalBind NoInline where evalBindSym = evalBindSymDefault
+instance EvalBind NoInline where
+  {-# SPECIALIZE instance EvalBind NoInline #-}
 
 instance AlphaEq dom dom dom env => AlphaEq NoInline NoInline dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq NoInline NoInline dom env #-}
 
-instance Sharable NoInline
+instance Sharable NoInline where {-# SPECIALIZE instance Sharable NoInline #-}
 
-instance Cumulative NoInline
+instance Cumulative NoInline where {-# SPECIALIZE instance Cumulative NoInline #-}
 
 instance SizeProp (NoInline :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (NoInline :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' s) = sizePropDefault s
 
 instance ( (NoInline :|| Type) :<: dom
          , OptimizeSuper dom)
       => Optimize (NoInline :|| Type) dom
   where
+    {-# SPECIALIZE instance ((NoInline :|| Type) :<: dom, OptimizeSuper dom) =>
+          Optimize (NoInline :|| Type) dom #-}
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-

@@ -61,37 +61,47 @@ data Mutable a
 
 instance Semantic Mutable
   where
+    {-# SPECIALIZE instance Semantic Mutable #-}
+    {-# INLINABLE semantics #-}
     semantics Run = Sem "runMutable" unsafePerformIO
 
 instance Typed Mutable
   where
+    {-# SPECIALIZE instance Typed Mutable #-}
+    {-# INLINABLE typeDictSym #-}
     typeDictSym Run = Just Dict
 
 semanticInstances ''Mutable
 
-instance EvalBind Mutable where evalBindSym = evalBindSymDefault
+instance EvalBind Mutable where
+  {-# SPECIALIZE instance EvalBind Mutable #-}
 
 instance AlphaEq dom dom dom env => AlphaEq Mutable Mutable dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance (AlphaEq dom dom dom env) =>
+          AlphaEq Mutable Mutable dom env #-}
 
-instance Sharable (MONAD Mut)
+instance Sharable (MONAD Mut) where {-# SPECIALIZE instance Sharable (MONAD Mut) #-}
 
-instance Cumulative (MONAD Mut)
+instance Cumulative (MONAD Mut) where {-# SPECIALIZE instance Cumulative (MONAD Mut) #-}
 
 instance SizeProp (MONAD Mut)
   where
+    {-# SPECIALIZE instance SizeProp (MONAD Mut) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp Return (WrapFull a :* Nil)      = infoSize a
     sizeProp Bind   (_ :* WrapFull f :* Nil) = snd $ infoSize f
     sizeProp Then   (_ :* WrapFull b :* Nil) = infoSize b
     sizeProp When   _                        = AnySize
 
-instance Sharable Mutable
+instance Sharable Mutable where {-# SPECIALIZE instance Sharable Mutable #-}
 
-instance Cumulative Mutable
+instance Cumulative Mutable where {-# SPECIALIZE instance Cumulative Mutable #-}
 
 instance SizeProp Mutable
   where
+    {-# SPECIALIZE instance SizeProp Mutable #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp Run (WrapFull a :* Nil) = infoSize a
 
 monadProxy :: P Mut
@@ -104,6 +114,12 @@ instance ( MONAD Mut :<: dom
          , OptimizeSuper dom)
       => Optimize (MONAD Mut) dom
   where
+    {-# SPECIALIZE instance ( MONAD Mut :<: dom
+                            , (Variable :|| Type) :<: dom
+                            , CLambda Type :<: dom
+                            , Let :<: dom
+                            , OptimizeSuper dom)
+                         => Optimize (MONAD Mut) dom #-}
     optimizeFeat opts bnd@Bind (ma :* f :* Nil) = do
         ma' <- optimizeM opts ma
         case getInfo ma' of
@@ -113,6 +129,7 @@ instance ( MONAD Mut :<: dom
               Info{} -> constructFeat opts bnd (ma' :* f' :* Nil)
 
     optimizeFeat opts a args = optimizeFeatDefault opts a args
+    {-# INLINABLE optimizeFeat #-}
 
     constructFeatOpt _ Bind (ma :* (lam :$ (ret :$ var)) :* Nil)
       | Just (SubConstr2 (Lambda v1)) <- prjLambda lam
@@ -177,10 +194,13 @@ instance ( MONAD Mut :<: dom
 
     constructFeatUnOpt opts When args =
         constructFeatUnOptDefaultTyp opts voidTypeRep When args
+    {-# INLINABLE constructFeatUnOpt #-}
 
 instance (Mutable :<: dom, MONAD Mut :<: dom, OptimizeSuper dom) => Optimize Mutable dom
   where
+    {-# SPECIALIZE instance (Mutable :<: dom, MONAD Mut :<: dom, OptimizeSuper dom) =>
+          Optimize Mutable dom #-}
     constructFeatUnOpt _ Run ((ret :$ a) :* Nil)
         | Just Return <- prjMonad monadProxy ret = return a
-    constructFeatUnOpt opts Run args = constructFeatUnOptDefault opts Run args
-
+    constructFeatUnOpt opts sym@Run args = constructFeatUnOptDefault opts sym args
+    {-# INLINABLE constructFeatUnOpt #-}

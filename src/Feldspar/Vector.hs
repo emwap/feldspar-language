@@ -164,6 +164,9 @@ type instance InternalShape (sh :. l1 :. l2) a = ([Length],[Internal a])
 
 instance (Syntax a, Shapely sh) => Syntactic (Pull sh a)
   where
+    {-# SPECIALIZE instance (Syntax a, Shapely sh) => Syntactic (Pull sh a) #-}
+    {-# INLINABLE desugar #-}
+    {-# INLINABLE sugar #-}
     type Domain (Pull sh a) = FeldDomain
     type Internal (Pull sh a) = InternalShape sh a
 
@@ -182,14 +185,21 @@ type instance CollIndex (Pull sh a) = Shape sh
 type instance CollSize  (Pull1 a) = Data Length
 
 instance Indexed (Pull sh a) where
+    {-# SPECIALIZE instance Indexed (Pull sh a) #-}
+    {-# INLINABLE (!) #-}
     Pull ixf _ ! i = ixf i
 
 instance Syntax a => Sized (Pull1 a)
   where
+    {-# SPECIALIZE instance Syntax a => Sized (Pull1 a) #-}
+    {-# INLINABLE collSize #-}
+    {-# INLINABLE setCollSize #-}
     collSize    = length
     setCollSize = newLen1
 
 instance CollMap (Pull sh a) (Pull sh b) where
+    {-# SPECIALIZE instance CollMap (Pull sh a) (Pull sh b) #-}
+    {-# INLINABLE collMap #-}
     collMap = map
 
 -- Functions
@@ -302,7 +312,7 @@ vec !: ix = ixf ix
 -- | Extract the diagonal of a two dimensional vector
 diagonal :: Pully vec DIM2 => vec DIM2 a -> Pull DIM1 a
 diagonal vec = backpermute (Z :. width) (\ (_ :. x) -> Z :. x :. x) vec
-  where (width : height : _) = toList (extent vec) -- brain explosion hack
+  where (width : _ : _) = toList (extent vec) -- brain explosion hack
 
 -- | Change the shape of a vector.
 backpermute :: Pully vec sh =>
@@ -446,12 +456,18 @@ class ShapeConc sh1 sh2 where
   splitIndex :: Shape (ShapeConcT sh1 sh2) -> Shape sh1 -> (Shape sh1,Shape sh2)
 
 instance ShapeConc Z sh2 where
+  {-# SPECIALIZE instance ShapeConc Z sh2 #-}
+  {-# INLINABLE shapeConc #-}
+  {-# INLINABLE splitIndex #-}
   type ShapeConcT Z sh2 = sh2
   shapeConc Z sh2 = sh2
 
   splitIndex sh Z = (Z,sh)
 
 instance ShapeConc sh1 sh2 => ShapeConc (sh1 :. Data Length) sh2 where
+  {-# SPECIALIZE instance ShapeConc sh1 sh2 => ShapeConc (sh1 :. Data Length) sh2 #-}
+  {-# INLINABLE shapeConc #-}
+  {-# INLINABLE splitIndex #-}
   type ShapeConcT (sh1 :. Data Length) sh2 = ShapeConcT sh1 sh2 :. Data Length
   shapeConc (sh1 :. l) sh2 = shapeConc sh1 sh2 :. l
 
@@ -478,7 +494,7 @@ flattenPush :: forall a sh1 sh2.
                Push (ShapeConcT sh1 sh2) a
 flattenPush (Pull ixf sh1) = Push f sh
   where f k = forShape sh1 $ \i ->
-                let Push g sh' = ixf i
+                let Push g _ = ixf i
                 in  g (\j a -> k (shapeConc i j) a)
         sh = let (i1,_ :: Shape sh2) = splitIndex fakeShape sh1
                  (Push _ sh2) = ixf i1
@@ -496,9 +512,9 @@ transposeL :: forall sh e vec.
               vec  (sh :. Data Length :. Data Length) e ->
               Pull (sh :. Data Length :. Data Length) e
 transposeL vec
-  = backpermute new_extent swap vec
-  where swap ((tail :: Shape sh) :. i :. j) = tail :. j :. i
-        new_extent         = swap (extent vec)
+  = backpermute new_extent swp vec
+  where swp ((tail :: Shape sh) :. i :. j) = tail :. j :. i
+        new_extent         = swp (extent vec)
 
 -- | Transpose a two-dimensional vector
 transpose2D :: Pully vec DIM2 => vec DIM2 e -> Pull DIM2 e
@@ -706,6 +722,7 @@ enumFromTo m n = indexed1 (i2n l) ((+m) . i2n)
     l = (n<m) ? 0 $ (n-m+1)
 
 -- | @enumFrom m@: Enumerate the indexes from @m@ to 'maxBound'
+enumFrom :: (Type a, Integral a) => Data a -> Pull DIM1 (Data a)
 enumFrom m = enumFromTo m (value maxBound)
 
 -- | An infix version of 'enumFromTo'.
@@ -714,8 +731,8 @@ enumFrom m = enumFromTo m (value maxBound)
 (...) = enumFromTo
 
 scan :: (Syntax a, Syntax b) => (a -> b -> a) -> a -> Pull DIM1 b -> Pull DIM1 a
-scan f init bs = toPull $ arrToManifest (fromList [length bs],
-  F.sugar $ sequential (length bs) (F.desugar init) $ \i s ->
+scan f ini bs = toPull $ arrToManifest (fromList [length bs],
+  F.sugar $ sequential (length bs) (F.desugar ini) $ \i s ->
     let s' = F.desugar $ f (F.sugar s) (bs!!i)
     in  (s',s'))
 
@@ -743,14 +760,14 @@ minimum = fold1 min
 -- | Compute logical or over a vector
 or :: Pully vec DIM1 => vec DIM1 (Data Bool) -> Data Bool
 or vec = snd (whileLoop (0,false) (\(i,b) -> not b && i < l) body)
-  where body (i,b)  = (i+1,ixf (Z :. i))
+  where body (i,_)  = (i+1,ixf (Z :. i))
         Pull ixf sh = toPull vec
         (Z,l)       = uncons sh
 
 -- | Compute logical and over a vector
 and :: Pully vec DIM1 => vec DIM1 (Data Bool) -> Data Bool
 and vec = snd (whileLoop (0,true) (\(i,b) -> b && i < l) body)
-  where body (i,b)  = (i+1,ixf (Z :. i))
+  where body (i,_)  = (i+1,ixf (Z :. i))
         Pull ixf sh = toPull vec
         (Z,l)       = uncons sh
 
@@ -829,7 +846,7 @@ vec1 ++ vec2 = Push k (sh1 :. (l1 + l2))
   where Push k1 ext1 = toPush vec1
         Push k2 ext2 = toPush vec2
         (sh1,l1) = uncons ext1
-        (sh2,l2) = uncons ext2
+        (_  ,l2) = uncons ext2
         k func = k1 func
                  >>
                  k2 (\ (sh :. i) a -> func (sh :. (i + l1)) a)
@@ -845,7 +862,7 @@ vec1 +=+ vec2 = Push f (sh1 :. (l1 + l2))
   where Pull ixf1 ext1 = toPull vec1
         Pull ixf2 ext2 = toPull vec2
         (sh1,l1) = uncons ext1
-        (sh2,l2) = uncons ext2
+        (_  ,l2) = uncons ext2
         f k = forShape (sh1 :. l1) $ \ (shi :. i) ->
                 do k (shi :. i)      (ixf1 (shi :. i))
                    k (shi :. i + l1) (ixf2 (shi :. i))
@@ -858,8 +875,8 @@ unpair :: Pushy vec (sh :. Data Length)
 unpair v = Push f' (sh :. (l * 2))
   where (Push f ex) = toPush v
         (sh,l) = uncons ex
-        f' k = f (\ (sh :. i) (a,b) -> k (sh :. (2 * i)) a
-                                    >> k (sh :. (2 * i + 1)) b)
+        f' k = f (\ (sh' :. i) (a,b) -> k (sh' :. (2 * i)) a
+                                     >> k (sh' :. (2 * i + 1)) b)
 
 -- | Similar to 'unpair' but allows control over where the elements end up
 --   in the result vector.
@@ -886,7 +903,7 @@ halve :: Pully vec (sh :. Data Length) => vec (sh :. Data Length) a
       -> (Pull (sh :. Data Length) a, Pull (sh :. Data Length) a)
 halve vec = (Pull ixf  (sh :. (l `div` 2))
             ,Pull ixf' (sh :. ((l+1) `div` 2)))
-  where ixf' (sh :. i) = ixf (sh :. (i + (l `div` 2)))
+  where ixf' (sh' :. i) = ixf (sh' :. (i + (l `div` 2)))
         Pull ixf ext = toPull vec
         (sh,l) = uncons ext
 
@@ -939,10 +956,16 @@ class Selector ss sh where
                   Shape sh -> Shape sh
 
 instance Selector ss sh => Selector (ss :. NotThis) (sh :. Data Length) where
+  {-# SPECIALIZE instance Selector ss sh => Selector (ss :. NotThis) (sh :. Data Length) #-}
+  {-# INLINABLE selectDimension #-}
+  {-# INLINABLE adjustDimension #-}
   selectDimension (NotThis ss) (sh :. _) = selectDimension ss sh
   adjustDimension (NotThis ss) f (sh :. l) = adjustDimension ss f sh :. l
 
 instance Selector This (sh :. Data Length) where
+  {-# SPECIALIZE instance Selector This (sh :. Data Length) #-}
+  {-# INLINABLE selectDimension #-}
+  {-# INLINABLE adjustDimension #-}
   selectDimension This (_ :. l) = l
   adjustDimension This f (sh :. l) = sh :. f l
 
@@ -960,7 +983,7 @@ conc s (Push k1 sh1) (Push k2 sh2)
 rev :: Selector sel sh =>
        Select sel -> Push sh a -> Push sh a
 rev s (Push k sh) = Push k' sh
-  where k' func = k (\sh a -> func (adjustDimension s (selectDimension s sh -) sh) a)
+  where k' func = k (\sh' a -> func (adjustDimension s (selectDimension s sh' -) sh') a)
 
 -- | This class captures all types of vectors which can turned into a 'Push'
 --   vector cheaply
@@ -968,9 +991,13 @@ class (Shaped vec) => Pushy vec sh where
   toPush :: vec sh a -> Push sh a
 
 instance Pushy Push sh where
+  {-# SPECIALIZE instance Pushy Push sh #-}
+  {-# INLINABLE toPush #-}
   toPush = id
 
 instance Pushy Pull sh where
+  {-# SPECIALIZE instance Pushy Pull sh #-}
+  {-# INLINABLE toPush #-}
   toPush (Pull ixf l) = Push f l
     where f k = forShape l $ \i ->
                  k i (ixf i)
@@ -1000,6 +1027,9 @@ thawPush1 = toPush . thawPull1
 
 instance (Syntax a, Shapely sh) => Syntactic (Push sh a)
   where
+    {-# SPECIALIZE instance (Syntax a, Shapely sh) => Syntactic (Push sh a) #-}
+    {-# INLINABLE desugar #-}
+    {-# INLINABLE sugar #-}
     type Domain (Push sh a) = FeldDomain
     type Internal (Push sh a) = InternalShape sh a
 
@@ -1035,7 +1065,7 @@ expandS n v = Push g $ insLeft n $ insLeft p $ ext'
   where (Push f ext) = toPush v
         (m, ext') = peelLeft ext
         p = m `div` n
-        g k = f $ \ ix v -> let (i,ix') = peelLeft ix in k (insLeft (i `div` p) $ insLeft (i `Feldspar.mod` p) $ ix') v
+        g k = f $ \ ix w -> let (i,ix') = peelLeft ix in k (insLeft (i `div` p) $ insLeft (i `Feldspar.mod` p) $ ix') w
 
 contractS :: Pushy vec (sh :. Data Length :. Data Length) =>
              vec (sh :. Data Length :. Data Length) a ->
@@ -1043,7 +1073,7 @@ contractS :: Pushy vec (sh :. Data Length :. Data Length) =>
 contractS v = Push g $ insLeft (m*n) $ ext'
   where (Push f ext) = toPush v
         (m, n, ext') = peelLeft2 ext
-        g k = f $ \ ix v -> let (i, j, ix') = peelLeft2 ix in k (insLeft (i*n + j) ix') v
+        g k = f $ \ ix w -> let (i, j, ix') = peelLeft2 ix in k (insLeft (i*n + j) ix') w
 
 transS :: Pushy vec (sh :. Data Length :. Data Length) =>
           vec (sh :. Data Length :. Data Length) a ->
@@ -1051,7 +1081,7 @@ transS :: Pushy vec (sh :. Data Length :. Data Length) =>
 transS v = Push g $ insLeft n $ insLeft m $ ext'
   where (Push f ext) = toPush v
         (m, n, ext') = peelLeft2 ext
-        g k = f $ \ ix v -> let (i, j, ix') = peelLeft2 ix in k (insLeft j $ insLeft i $ ix') v
+        g k = f $ \ ix w -> let (i, j, ix') = peelLeft2 ix in k (insLeft j $ insLeft i $ ix') w
 
 -- | Instantiate the innermost dimension from an abstracted push vector
 uncurryS :: Data Length -> (Data Length -> Push sh a) -> Push (sh :. Data Length) a
@@ -1079,15 +1109,24 @@ class Shaped vec => Storable vec where
   store :: (Syntax a, Shapely sh) => vec sh a -> Manifest sh a
 
 instance Storable Manifest where
+  {-# SPECIALIZE instance Storable Manifest #-}
+  {-# INLINABLE store #-}
   store m = m
 
 instance Storable Pull where
-  store vec@(Pull ixf sh) = Manifest (save $ fromPull (fmap F.desugar vec)) sh
+  {-# SPECIALIZE instance Storable Pull #-}
+  {-# INLINABLE store #-}
+  store vec@(Pull _ sh) = Manifest (save $ fromPull (fmap F.desugar vec)) sh
 
 instance Storable Push where
-  store vec@(Push f sh) = Manifest (save $ fromPush (fmap F.desugar vec)) sh
+  {-# SPECIALIZE instance Storable Push #-}
+  {-# INLINABLE store #-}
+  store vec@(Push _ sh) = Manifest (save $ fromPush (fmap F.desugar vec)) sh
 
 instance (Syntax a, Shapely sh) => Syntactic (Manifest sh a) where
+  {-# SPECIALIZE instance (Syntax a, Shapely sh) => Syntactic (Manifest sh a) #-}
+  {-# INLINABLE desugar #-}
+  {-# INLINABLE sugar #-}
   type Domain   (Manifest sh a) = FeldDomain
   type Internal (Manifest sh a) = InternalShape sh a
   desugar v@(Manifest _ sh) = case sh of
@@ -1122,6 +1161,10 @@ class Flat sh a where
   freezeArr   :: Proxy a -> Shape sh -> Arr a -> M (FlatManifest sh a)
 
 instance Type a => Flat sh (Data a) where
+  {-# SPECIALIZE instance Type a => Flat sh (Data a) #-}
+  {-# INLINABLE allocArray #-}
+  {-# INLINABLE writeArray #-}
+  {-# INLINABLE freezeArr #-}
   type FlatManifest sh (Data a) = Manifest sh (Data a)
   type Arr (Data a) = Data (MArr a)
   allocArray _ _ = newArr_
@@ -1130,6 +1173,10 @@ instance Type a => Flat sh (Data a) where
                        freezeArray arr
 
 instance (Flat sh a, Flat sh b) => Flat sh (a,b) where
+  {-# SPECIALIZE instance (Flat sh a, Flat sh b) => Flat sh (a,b) #-}
+  {-# INLINABLE allocArray #-}
+  {-# INLINABLE writeArray #-}
+  {-# INLINABLE freezeArr #-}
   type FlatManifest sh (a,b) = (FlatManifest sh a, FlatManifest sh b)
   type Arr (a,b) = (Arr a, Arr b)
   allocArray (_ :: Proxy (a,b)) (_ :: Proxy sh) l = do
@@ -1146,9 +1193,13 @@ instance (Flat sh a, Flat sh b) => Flat sh (a,b) where
     return (a1,a2)
 
 instance (Flat sh a, Flat sh b, Flat sh c) => Flat sh (a,b,c) where
+  {-# SPECIALIZE instance (Flat sh a, Flat sh b, Flat sh c) => Flat sh (a,b,c) #-}
+  {-# INLINABLE allocArray #-}
+  {-# INLINABLE writeArray #-}
+  {-# INLINABLE freezeArr #-}
   type FlatManifest sh (a,b,c) = (FlatManifest sh a, FlatManifest sh b,FlatManifest sh c)
   type Arr (a,b,c) = (Arr a, Arr b, Arr c)
-  allocArray (p :: Proxy (a,b,c)) (_ :: Proxy sh) l = do
+  allocArray (_ :: Proxy (a,b,c)) (_ :: Proxy sh) l = do
     a1 <- allocArray (Proxy :: Proxy a) (Proxy :: Proxy sh) l
     a2 <- allocArray (Proxy :: Proxy b) (Proxy :: Proxy sh) l
     a3 <- allocArray (Proxy :: Proxy c) (Proxy :: Proxy sh) l
@@ -1159,7 +1210,7 @@ instance (Flat sh a, Flat sh b, Flat sh c) => Flat sh (a,b,c) where
         writeArray (Proxy :: Proxy sh) arr2 (\k -> k i b) >>
         writeArray (Proxy :: Proxy sh) arr3 (\k -> k i c)
       )
-  freezeArr (p :: Proxy (a,b,c)) sh (arr1,arr2,arr3) = do
+  freezeArr (_ :: Proxy (a,b,c)) sh (arr1,arr2,arr3) = do
     a1 <- freezeArr (Proxy :: Proxy a) sh arr1
     a2 <- freezeArr (Proxy :: Proxy b) sh arr2
     a3 <- freezeArr (Proxy :: Proxy c) sh arr3
@@ -1183,12 +1234,18 @@ class (Shaped vec) => Pully vec sh where
   toPull :: vec sh a -> Pull sh a
 
 instance Shapely sh => Pully Manifest sh where
+  {-# SPECIALIZE instance Shapely sh => Pully Manifest sh #-}
+  {-# INLINABLE toPull #-}
   toPull (Manifest arr sh) = Pull (\i -> F.sugar $ arr ! toIndex sh i) sh
 
 instance Pully Pull sh where
+  {-# SPECIALIZE instance Pully Pull sh #-}
+  {-# INLINABLE toPull #-}
   toPull vec = vec
 
 instance Shapely sh => Pushy Manifest sh where
+  {-# SPECIALIZE instance Shapely sh => Pushy Manifest sh #-}
+  {-# INLINABLE toPush #-}
   toPush m = toPush (toPull m)
 
 -- | A single method class for getting the shape of a vector
@@ -1196,12 +1253,18 @@ class Shaped vec where
   extent :: Shapely sh => vec sh a -> Shape sh
 
 instance Shaped Pull where
+  {-# SPECIALIZE instance Shaped Pull #-}
+  {-# INLINABLE extent #-}
   extent (Pull _ sh) = sh
 
 instance Shaped Push where
+  {-# SPECIALIZE instance Shaped Push #-}
+  {-# INLINABLE extent #-}
   extent (Push _ sh) = sh
 
 instance Shaped Manifest where
+  {-# SPECIALIZE instance Shaped Manifest #-}
+  {-# INLINABLE extent #-}
   extent (Manifest _ sh) = sh
 
 -- Overloaded operations
@@ -1223,12 +1286,22 @@ class ShapeMap vec where
            -> vec (sh :. Data Length) a
 
 instance ShapeMap Pull where
+  {-# SPECIALIZE instance ShapeMap Pull #-}
+  {-# INLINABLE reverse #-}
+  {-# INLINABLE transpose #-}
+  {-# INLINABLE expand #-}
+  {-# INLINABLE contract #-}
   reverse   vec = reversePull vec
   transpose vec = transL vec
   expand  l vec = expandL l vec
   contract  vec = contractL vec
 
 instance ShapeMap Push where
+  {-# SPECIALIZE instance ShapeMap Push #-}
+  {-# INLINABLE reverse #-}
+  {-# INLINABLE transpose #-}
+  {-# INLINABLE expand #-}
+  {-# INLINABLE contract #-}
   reverse   vec = reversePush vec
   transpose vec = transS vec
   expand  l vec = expandS l vec
@@ -1251,4 +1324,3 @@ tPull _ = id
 
 tPull1 :: Patch a a -> Patch (Pull1 a) (Pull1 a)
 tPull1 _ = id
-

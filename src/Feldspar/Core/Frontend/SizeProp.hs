@@ -62,21 +62,25 @@ type SizeCap a = Data a -> Data a
 sizeProp :: (Syntax a, Type b) =>
     (Size (Internal a) -> Size b) -> a -> SizeCap b
 sizeProp = sugarSymF . PropSize
+{-# INLINABLE sizeProp #-}
 
 -- | A guarantee that the argument is within the given size
 cap :: Type a => Size a -> SizeCap a
-cap sz = sizeProp (const sz) (Data $ desugar ())
+cap = flip sizeProp (Data $ desugar ()) . const
+{-# INLINABLE cap #-}
 
 -- | @notAbove a b@: A guarantee that @b <= a@ holds
 notAbove :: (Type a, Bounded a, Size a ~ Range a) => Data a -> SizeCap a
 notAbove = sizeProp (Range minBound . upperBound)
+{-# INLINABLE notAbove #-}
 
 -- | @notBelow a b@: A guarantee that @b >= a@ holds
 notBelow :: (Type a, Bounded a, Size a ~ Range a) => Data a -> SizeCap a
 notBelow = sizeProp (flip Range maxBound . lowerBound)
+{-# INLINABLE notBelow #-}
 
 -- | @between l u a@: A guarantee that @l <= a <= u@ holds
 between :: (Type a, Bounded a, Size a ~ Range a) =>
     Data a -> Data a -> SizeCap a
 between l u = notBelow l . notAbove u
-
+{-# INLINABLE between #-}

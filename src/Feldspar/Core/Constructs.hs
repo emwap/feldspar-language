@@ -151,13 +151,21 @@ newtype FeldDomain a = FeldDomain { getFeldDomain :: HODomain FeldSymbols Typeab
 
 instance Constrained FeldDomain
   where
+    {-# SPECIALIZE instance Constrained FeldDomain #-}
+    {-# INLINABLE exprDict #-}
     type Sat FeldDomain = Typeable
     exprDict (FeldDomain s) = exprDict s
 
-deriving instance (Project sym FeldSymbols) => Project sym FeldDomain
-
-instance (InjectC sym FeldSymbols a, Typeable a) => InjectC sym FeldDomain a
+instance (Project sym FeldSymbols) => Project sym FeldDomain
   where
+    {-# SPECIALIZE instance (Project sym FeldSymbols) => Project sym FeldDomain #-}
+    {-# INLINABLE prj #-}
+    prj = prj . getFeldDomain
+
+instance (InjectC sym FeldSymbols a, Sat FeldDomain a) => InjectC sym FeldDomain a
+  where
+    {-# SPECIALIZE instance (InjectC sym FeldSymbols a, Sat FeldDomain a) => InjectC sym FeldDomain a #-}
+    {-# INLINABLE injC #-}
     injC = FeldDomain . injC
 
 toFeld :: ASTF (HODomain FeldSymbols Typeable Type) a -> ASTF FeldDomain a
@@ -176,6 +184,8 @@ fromFeld = fold $ appArgs . Sym . getFeldDomain
 
 instance IsHODomain FeldDomain Typeable Type
   where
+    {-# SPECIALIZE instance IsHODomain FeldDomain Typeable Type #-}
+    {-# INLINABLE lambda #-}
     lambda f = case lambda (fromFeld . f . toFeld) of
         Sym s -> Sym (FeldDomain s)
 
@@ -195,16 +205,21 @@ deriving instance Typeable1 Data
 
 instance Syntactic (Data a)
   where
+    {-# SPECIALIZE instance Syntactic (Data a) #-}
     type Domain (Data a)   = FeldDomain
     type Internal (Data a) = a
-    desugar = unData
-    sugar   = Data
+    desugar = coerce
+    sugar   = coerce
+    {-# INLINABLE sugar #-}
+    {-# INLINABLE desugar #-}
 
 type SyntacticFeld a = (Syntactic a, Domain a ~ FeldDomain)
 
 -- | Specialization of the 'Syntactic' class for the Feldspar domain
 class    (SyntacticFeld a, Type (Internal a)) => Syntax a
 instance (SyntacticFeld a, Type (Internal a)) => Syntax a
+  where
+    {-# SPECIALIZE instance (SyntacticFeld a, Type (Internal a)) => Syntax a #-}
   -- It would be possible to let 'Syntax' be an alias instead of giving separate
   -- instances for all types. However, this leads to horrible error messages.
   -- For example, if 'Syntax' is an alias, the following expression gives a huge
@@ -217,9 +232,12 @@ instance (SyntacticFeld a, Type (Internal a)) => Syntax a
 
 reifyF :: SyntacticFeld a => a -> ASTF FeldDom (Internal a)
 reifyF = reifyTop . fromFeld . desugar
+{-# INLINABLE reifyF #-}
 
 instance Type a => Eq (Data a)
   where
+    {-# SPECIALIZE instance (Type a) => Eq (Data a) #-}
+    {-# INLINABLE (==) #-}
     Data a == Data b = alphaEq (reifyF a) (reifyF b)
 
 instance Type a => Show (Data a)
@@ -232,9 +250,10 @@ sugarSymF :: ( ApplySym sig b FeldDomain
              , Type (DenResult sig)
              )
           => feature sig -> c
-sugarSymF sym = sugarN $ appSym' $ Sym $ FeldDomain $ injC $ c' sym
+sugarSymF = sugarN . appSym' . Sym . FeldDomain . injC . c'
+{-# INLINABLE sugarSymF #-}
 
 -- | Create a variable from an identifier
 mkVariable :: Type a => Integer -> Data a
-mkVariable v = sugarSymF (Variable (fromInteger v))
-
+mkVariable = sugarSymF . Variable . fromInteger
+{-# INLINABLE mkVariable #-}

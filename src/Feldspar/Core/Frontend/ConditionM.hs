@@ -37,10 +37,12 @@ import Feldspar.Core.Frontend.Mutable
 
 ifM :: Syntax a => Data Bool -> M a -> M a -> M a
 ifM = sugarSymC ConditionM
+{-# INLINABLE ifM #-}
 
 whenM :: Data Bool -> M () -> M ()
 whenM c ma = ifM c ma (return ())
+{-# INLINABLE whenM #-}
 
 unlessM :: Data Bool -> M () -> M ()
-unlessM c = ifM c (return ())
-
+unlessM = flip ifM (return ())
+{-# INLINABLE unlessM #-}

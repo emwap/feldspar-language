@@ -66,13 +66,15 @@ import Feldspar.Lattice
 import Feldspar.Core.Types
 import Feldspar.Core.Interpretation
 
-instance Sharable Variable  -- `codeMotion` will not share variables anyway
-instance Sharable Lambda    -- Will not be shared anyway because we disallow variables of `->` type
-instance Sharable Let
+-- `codeMotion` will not share variables anyway
+instance Sharable Variable where {-# SPECIALIZE instance Sharable Variable #-}
+-- Will not be shared anyway because we disallow variables of `->` type
+instance Sharable Lambda where {-# SPECIALIZE instance Sharable Lambda #-}
+instance Sharable Let where {-# SPECIALIZE instance Sharable Let #-}
 
-instance Cumulative Variable
-instance Cumulative Lambda
-instance Cumulative Let
+instance Cumulative Variable where {-# SPECIALIZE instance Cumulative Variable #-}
+instance Cumulative Lambda where {-# SPECIALIZE instance Cumulative Lambda #-}
+instance Cumulative Let where {-# SPECIALIZE instance Cumulative Let #-}
 
 subst :: forall dom a b
     .  ( Constrained dom
@@ -221,6 +223,16 @@ instance ( (Variable :|| Type) :<: dom
          , OptimizeSuper dom)
       => Optimize (Variable :|| Type) dom
   where
+    {-# SPECIALIZE instance ((Variable :|| Type) :<: dom, OptimizeSuper dom) =>
+          Optimize (Variable :|| Type) dom #-}
+    {-# INLINABLE sizePropEnv #-}
+    sizePropEnv (C' (Variable v :: Variable a)) Nil
+        = reader $ \env ->
+            case Prelude.lookup v (varEnv env) of
+              Nothing              -> universal
+              Just (SomeInfo info) -> infoSize (fromJust $ gcast info :: Info (DenResult a))
+
+    {-# INLINABLE constructFeatOpt #-}
     constructFeatUnOpt _ (C' var@(Variable v)) Nil
         = reader $ \env ->
             let build info = let info' = info { infoVars = singleton v (SomeType $ infoType info) }
@@ -233,13 +245,21 @@ instance ( CLambda Type :<: dom
          , OptimizeSuper dom)
       => Optimize (CLambda Type) dom
   where
+    {-# SPECIALIZE instance (CLambda Type :<: dom, OptimizeSuper dom) =>
+          Optimize (CLambda Type) dom #-}
     -- | Assigns a 'universal' size to the bound variable. This only makes sense
     -- for top-level lambdas. For other uses, use 'optimizeLambda' instead.
 
+    {-# INLINABLE sizePropEnv #-}
+    sizePropEnv (SubConstr2 (Lambda _)) (body :* Nil)
+        = return (universal, infoSize $ getInfo body)
+
+    {-# INLINABLE optimizeFeat #-}
     optimizeFeat opts lam@(SubConstr2 (Lambda _))
         | Dict <- exprDict lam
         = optimizeLambda opts (optimizeM opts) (mkInfo universal) lam
 
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt _ lam@(SubConstr2 (Lambda v)) (body :* Nil)
         | Dict <- exprDict lam
         , Info t sz vars _ <- getInfo body
@@ -250,6 +270,8 @@ instance ( CLambda Type :<: dom
 
 instance SizeProp Let
   where
+    {-# SPECIALIZE instance SizeProp Let #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp Let (_ :* WrapFull f :* Nil) = snd $ infoSize f
 
 instance
@@ -260,6 +282,12 @@ instance
     ) =>
       Optimize Let dom
   where
+    {-# SPECIALIZE instance ( Let                 :<: dom
+                            , (Variable :|| Type) :<: dom
+                            , CLambda Type        :<: dom
+                            , OptimizeSuper dom
+                            ) => Optimize Let dom #-}
+    {-# INLINABLE optimizeFeat #-}
     optimizeFeat opts lt@Let (a :* f :* Nil) = do
         a' <- optimizeM opts a
         f' <- optimizeFunction opts (optimizeM opts) (getInfo a') f
@@ -310,6 +338,7 @@ instance
 
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
 
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts Let args@(_ :* (lam :$ body) :* Nil)
         | Just (SubConstr2 (Lambda _)) <- prjLambda lam
         , Info {infoType = t} <- getInfo body
@@ -318,13 +347,16 @@ instance
 prjLambda :: (Project (CLambda Type) dom)
           => dom sig -> Maybe (CLambda Type sig)
 prjLambda = prj
+{-# INLINABLE prjLambda #-}
 
 cLambda :: Type a => VarId -> CLambda Type (b :-> Full (a -> b))
 cLambda = SubConstr2 . Lambda
+{-# INLINABLE cLambda #-}
 
 -- | Allow an existing binding to be used with a body of a different type
 reuseCLambda :: CLambda Type (b :-> Full (a -> b)) -> CLambda Type (c :-> Full (a -> c))
 reuseCLambda (SubConstr2 (Lambda v)) = SubConstr2 (Lambda v)
+{-# INLINABLE reuseCLambda #-}
 
 -- | Collects the immediate let bindings in a list and returns the first non-let expression
 --
@@ -352,4 +384,3 @@ collectLetBinders = go []
       , Dict <- exprDict e
       = go ((v, ASTB e):bs) body
     go bs e = (reverse bs, e)
-

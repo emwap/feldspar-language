@@ -38,3 +38,4 @@ import Feldspar.Core.Constructs
 -- | Annotate an expression with information about its source code
 sourceData :: Type a => SourceInfo1 a -> Data a -> Data a
 sourceData info = sugarSymF (Decor info Id)
+{-# INLINABLE sourceData #-}

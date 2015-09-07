@@ -60,6 +60,8 @@ data MutableReference a
 
 instance Semantic MutableReference
   where
+    {-# SPECIALIZE instance Semantic MutableReference #-}
+    {-# INLINABLE semantics #-}
     semantics NewRef = Sem "newRef" newIORef
     semantics GetRef = Sem "getRef" readIORef
     semantics SetRef = Sem "setRef" writeIORef
@@ -67,19 +69,25 @@ instance Semantic MutableReference
 
 semanticInstances ''MutableReference
 
-instance EvalBind MutableReference where evalBindSym = evalBindSymDefault
+instance EvalBind MutableReference where
+  {-# SPECIALIZE instance EvalBind MutableReference #-}
 
 instance AlphaEq dom dom dom env =>
     AlphaEq MutableReference MutableReference dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq MutableReference MutableReference dom env #-}
 
-instance Sharable MutableReference
+instance Sharable MutableReference where
+  {-# SPECIALIZE instance Sharable MutableReference #-}
 
-instance Cumulative MutableReference
+instance Cumulative MutableReference where
+  {-# SPECIALIZE instance Cumulative MutableReference #-}
 
 instance SizeProp MutableReference
   where
+    {-# SPECIALIZE instance SizeProp MutableReference #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp NewRef _ = universal
     sizeProp GetRef _ = universal
     sizeProp SetRef _ = universal
@@ -93,6 +101,13 @@ instance ( MutableReference :<: dom
          )
       => Optimize MutableReference dom
   where
+    {-# SPECIALIZE instance ( MutableReference :<: dom
+                            , MONAD Mut :<: dom
+                            , Project (CLambda Type) dom
+                            , Project (Variable :|| Type) dom
+                            , OptimizeSuper dom
+                            )
+                         => Optimize MutableReference dom #-}
     -- modifyRef _ id ==> return ()
     constructFeatUnOpt opts ModRef (_ :* (lam :$ body) :* Nil)
        | Just (SubConstr2 (Lambda v1)) <- prjLambda lam
@@ -104,4 +119,4 @@ instance ( MutableReference :<: dom
     constructFeatUnOpt opts GetRef args = constructFeatUnOptDefaultTyp opts (MutType typeRep) GetRef args
     constructFeatUnOpt opts SetRef args = constructFeatUnOptDefaultTyp opts (MutType typeRep) SetRef args
     constructFeatUnOpt opts ModRef args = constructFeatUnOptDefaultTyp opts (MutType typeRep) ModRef args
-
+    {-# INLINABLE constructFeatUnOpt #-}

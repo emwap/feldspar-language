@@ -45,12 +45,17 @@ newtype Future a = Future { unFuture :: Data (FVal (Internal a)) }
 
 later :: (Syntax a, Syntax b) => (a -> b) -> Future a -> Future b
 later f = future . f . await
+{-# INLINABLE later #-}
 
 pval :: (Syntax a, Syntax b) => (a -> b) -> a -> b
 pval f x = await $ force $ future (f x)
+{-# INLINABLE pval #-}
 
 instance Syntax a => Syntactic (Future a)
   where
+    {-# SPECIALIZE instance Syntax a => Syntactic (Future a) #-}
+    {-# INLINABLE desugar #-}
+    {-# INLINABLE sugar #-}
     type Domain (Future a)   = FeldDomain
     type Internal (Future a) = FVal (Internal a)
     desugar = desugar . unFuture
@@ -58,7 +63,8 @@ instance Syntax a => Syntactic (Future a)
 
 future :: Syntax a => a -> Future a
 future = sugarSymF MkFuture
+{-# INLINABLE future #-}
 
 await :: Syntax a => Future a -> a
 await = sugarSymF Await
-
+{-# INLINABLE await #-}

@@ -51,12 +51,14 @@ import Feldspar.Core.Types
 import Feldspar.Core.Interpretation
 import Feldspar.Core.Constructs.Binding
 
-instance Sharable Tuple
+instance Sharable Tuple where {-# SPECIALIZE instance Sharable Tuple #-}
 
-instance Cumulative Tuple
+instance Cumulative Tuple where {-# SPECIALIZE instance Cumulative Tuple #-}
 
 instance SizeProp (Tuple :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (Tuple :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' Tup2) (a :* b :* Nil)
         | WrapFull ia <- a
         , WrapFull ib <- b
@@ -332,9 +334,11 @@ instance SizeProp (Tuple :|| Type)
 
 instance Sharable Select
   where
-    sharable _ = False
+    {-# SPECIALIZE instance Sharable Select #-}
+    {-# INLINABLE sharable #-}
+    sharable = const False
 
-instance Cumulative Select
+instance Cumulative Select where {-# SPECIALIZE instance Cumulative Select #-}
 
 sel1Size :: (Sel1' a ~ b) => TypeRep a -> Size a -> Size b
 sel1Size Tup2Type{}  = $(proj 2 0)
@@ -487,6 +491,8 @@ sel15Size Tup15Type{} = $(proj 15 14)
 
 instance SizeProp (Select :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (Select :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' Sel1) (WrapFull ia :* Nil) =
         sel1Size (infoType ia) (infoSize ia)
     sizeProp (C' Sel2) (WrapFull ia :* Nil) =
@@ -530,6 +536,10 @@ instance
     ) =>
       Optimize (Tuple :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (Tuple  :|| Type) :<: dom
+                            , (Select :|| Type) :<: dom
+                            , OptimizeSuper dom
+                            ) => Optimize (Tuple :|| Type) dom #-}
     constructFeatOpt _ (C' tup@Tup2) (s1 :* s2 :* Nil)
         | (prjF -> Just (C' Sel1)) :$ a <- s1
         , (prjF -> Just (C' Sel2)) :$ b <- s2
@@ -811,8 +821,10 @@ instance
         = return a
 
     constructFeatOpt opts feat args = constructFeatUnOpt opts feat args
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
+    {-# INLINABLE constructFeatUnOpt #-}
 
 
 instance
@@ -822,9 +834,15 @@ instance
     , Let :<: dom
     , (Variable :|| Type) :<: dom
     , OptimizeSuper dom
-    ) =>
-      Optimize (Select :|| Type) dom
+    ) => Optimize (Select :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (Select :|| Type) :<: dom
+                            , CLambda Type :<: dom
+                            , (Tuple  :|| Type) :<: dom
+                            , Let :<: dom
+                            , (Variable :|| Type) :<: dom
+                            , OptimizeSuper dom
+                            ) => Optimize (Select :|| Type) dom #-}
     constructFeatOpt opts s@(C' Sel1) (t :* Nil)
         | ((prjF -> Just (C' Tup2)) :$ a :$ _) <- t                          = return a
         | ((prjF -> Just (C' Tup3)) :$ a :$ _ :$ _) <- t                     = return a
@@ -837,7 +855,6 @@ instance
          = do s' <- constructFeatOpt opts s (b :* Nil)
               b' <- constructFeatOpt opts (reuseCLambda v) (s' :* Nil)
               constructFeatOpt opts Let (a :* b' :* Nil)
-
 
     constructFeatOpt opts s@(C' Sel2) (t :* Nil)
         | ((prjF -> Just (C' Tup2)) :$ _ :$ a) <- t                          = return a
@@ -904,6 +921,7 @@ instance
               constructFeatOpt opts Let (a :* b' :* Nil)
 
     constructFeatOpt opts feat args = constructFeatUnOpt opts feat args
+    {-# INLINABLE constructFeatOpt #-}
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
-
+    {-# INLINABLE constructFeatUnOpt #-}

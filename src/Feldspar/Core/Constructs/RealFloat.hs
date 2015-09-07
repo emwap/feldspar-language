@@ -21,27 +21,36 @@ data REALFLOAT a
 
 instance Semantic REALFLOAT
   where
+    {-# SPECIALIZE instance Semantic REALFLOAT #-}
+    {-# INLINABLE semantics #-}
     semantics Atan2   = Sem "atan2" Prelude.atan2
 
 semanticInstances ''REALFLOAT
 
-instance EvalBind REALFLOAT where evalBindSym = evalBindSymDefault
+instance EvalBind REALFLOAT where
+  {-# SPECIALIZE instance EvalBind REALFLOAT #-}
 
 instance AlphaEq dom dom dom env => AlphaEq REALFLOAT REALFLOAT dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq REALFLOAT REALFLOAT dom env #-}
 
-instance Sharable REALFLOAT
+instance Sharable REALFLOAT where {-# SPECIALIZE instance Sharable REALFLOAT #-}
 
-instance Cumulative REALFLOAT
+instance Cumulative REALFLOAT where {-# SPECIALIZE instance Cumulative REALFLOAT #-}
 
 instance SizeProp (REALFLOAT :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (REALFLOAT :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' s) = sizePropDefault s
 
 instance ( (REALFLOAT :|| Type) :<: dom
          , OptimizeSuper dom)
       => Optimize (REALFLOAT :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (REALFLOAT :|| Type) :<: dom
+                            , OptimizeSuper dom)
+                         => Optimize (REALFLOAT :|| Type) dom #-}
+    {-# INLINABLE constructFeatUnOpt #-}
     constructFeatUnOpt opts a@(C' _) = constructFeatUnOptDefault opts a
-

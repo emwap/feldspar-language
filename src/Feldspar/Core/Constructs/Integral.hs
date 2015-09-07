@@ -65,6 +65,8 @@ data INTEGRAL a
 
 instance Semantic INTEGRAL
   where
+    {-# SPECIALIZE instance Semantic INTEGRAL #-}
+    {-# INLINABLE semantics #-}
     semantics Quot = Sem "quot" quot
     semantics Rem  = Sem "rem"  rem
     semantics Div  = Sem "div"  div
@@ -73,18 +75,22 @@ instance Semantic INTEGRAL
 
 semanticInstances ''INTEGRAL
 
-instance EvalBind INTEGRAL where evalBindSym = evalBindSymDefault
+instance EvalBind INTEGRAL where
+  {-# SPECIALIZE instance EvalBind INTEGRAL #-}
 
 instance AlphaEq dom dom dom env => AlphaEq INTEGRAL INTEGRAL dom env
   where
-    alphaEqSym = alphaEqSymDefault
+    {-# SPECIALIZE instance AlphaEq dom dom dom env =>
+          AlphaEq INTEGRAL INTEGRAL dom env #-}
 
-instance Sharable INTEGRAL
+instance Sharable INTEGRAL where {-# SPECIALIZE instance Sharable INTEGRAL #-}
 
-instance Cumulative INTEGRAL
+instance Cumulative INTEGRAL where {-# SPECIALIZE instance Cumulative INTEGRAL #-}
 
 instance SizeProp (INTEGRAL :|| Type)
   where
+    {-# SPECIALIZE instance SizeProp (INTEGRAL :|| Type) #-}
+    {-# INLINABLE sizeProp #-}
     sizeProp (C' Quot) (WrapFull a :* WrapFull b :* Nil) = rangeQuot (infoSize a) (infoSize b)
     sizeProp (C' Rem)  (WrapFull a :* WrapFull b :* Nil) = rangeRem (infoSize a) (infoSize b)
     sizeProp (C' Div)  (WrapFull a :* WrapFull b :* Nil) = rangeDiv (infoSize a) (infoSize b)
@@ -105,6 +111,17 @@ instance
     ) =>
       Optimize (INTEGRAL :|| Type) dom
   where
+    {-# SPECIALIZE instance ( (INTEGRAL  :||Type) :<: dom
+                            , (BITS      :||Type) :<: dom
+                            , (EQ        :||Type) :<: dom
+                            , (ORD       :||Type) :<: dom
+                            , (COMPLEX :|| Type) :<: dom
+                            , (Condition :||Type) :<: dom
+                            , (Logic     :||Type) :<: dom
+                            , Cumulative dom
+                            , OptimizeSuper dom
+                            , Optimize (Condition :|| Type) dom
+                            ) => Optimize (INTEGRAL :|| Type) dom #-}
     constructFeatOpt _ (C' Quot) (a :* b :* Nil)
         | Just 1 <- viewLiteral b = return a
 {-
@@ -180,6 +197,7 @@ instance
     constructFeatOpt opts a args = constructFeatUnOpt opts a args
 
     constructFeatUnOpt opts x@(C' _) = constructFeatUnOptDefault opts x
+    {-# INLINABLE constructFeatUnOpt #-}
 
 -- Auxiliary functions
 
@@ -195,4 +213,3 @@ sameSign :: BoundedInt a => Range a -> Range a -> Bool
 sameSign ra rb
     =  isNatural  ra && isNatural  rb
     || isNegative ra && isNegative rb
-

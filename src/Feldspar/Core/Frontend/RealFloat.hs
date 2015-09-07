@@ -12,6 +12,7 @@ import Feldspar.Core.Constructs.RealFloat
 class (Type a, Prelude.RealFloat a) => RealFloat a where
   atan2 :: Data a -> Data a -> Data a
   atan2 = sugarSymF Atan2
+  {-# INLINABLE atan2 #-}
 
-instance RealFloat Float
-instance RealFloat Double
+instance RealFloat Float where {-# SPECIALIZE instance RealFloat Float #-}
+instance RealFloat Double where {-# SPECIALIZE instance RealFloat Double #-}
