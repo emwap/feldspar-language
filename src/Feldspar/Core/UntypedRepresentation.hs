@@ -91,7 +91,7 @@ data Type =
    | FValType Type
    deriving (Eq,Show)
 
-data Var = Var { varNum :: Integer
+data Var = Var { varNum  :: Integer
                , varType :: Type
                }
 
@@ -459,6 +459,7 @@ stringTree = unfoldTree go
     go (In (LetFun (s,k,e1) e2)) = (unwords ["LetFun", show k, s], [e1,e2])
     go (In (Literal l))          = (show l, [])
     go (In (App p _ es))         = (show p,es)
+{-# INLINABLE stringTree #-}
 
 class HasType a where
     type TypeOf a
