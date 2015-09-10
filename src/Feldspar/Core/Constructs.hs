@@ -208,8 +208,13 @@ instance Syntactic (Data a)
     {-# SPECIALIZE instance Syntactic (Data a) #-}
     type Domain (Data a)   = FeldDomain
     type Internal (Data a) = a
+#if MIN_VERSION_base(4,7,0)
     desugar = coerce
     sugar   = coerce
+#else
+    desugar = unData
+    sugar   = Data
+#endif
     {-# INLINABLE sugar #-}
     {-# INLINABLE desugar #-}
 
