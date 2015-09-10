@@ -877,7 +877,6 @@ class (Eq a, Show a, Typeable a, Show (Size a), Lattice (Size a)) => Type a
     toTarget :: BitWidth n -> a -> TargetType n a
 
 instance Type ()      where
-  {-# SPECIALIZE instance Type () #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -885,7 +884,6 @@ instance Type ()      where
   sizeOf _ = AnySize
   toTarget _ = id
 instance Type Bool    where
-  {-# SPECIALIZE instance Type Bool #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -893,7 +891,6 @@ instance Type Bool    where
   sizeOf _ = AnySize
   toTarget _ = id
 instance Type Word8   where
-  {-# SPECIALIZE instance Type Word8 #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -901,7 +898,6 @@ instance Type Word8   where
   sizeOf = singletonRange
   toTarget _ = id
 instance Type Int8    where
-  {-# SPECIALIZE instance Type Int8 #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -909,7 +905,6 @@ instance Type Int8    where
   sizeOf = singletonRange
   toTarget _ = id
 instance Type Word16  where
-  {-# SPECIALIZE instance Type Word16 #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -917,7 +912,6 @@ instance Type Word16  where
   sizeOf = singletonRange
   toTarget _ = id
 instance Type Int16   where
-  {-# SPECIALIZE instance Type Int16 #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -925,7 +919,6 @@ instance Type Int16   where
   sizeOf = singletonRange
   toTarget _ = id
 instance Type Word32  where
-  {-# SPECIALIZE instance Type Word32 #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -933,7 +926,6 @@ instance Type Word32  where
   sizeOf = singletonRange
   toTarget _ = id
 instance Type Int32   where
-  {-# SPECIALIZE instance Type Int32 #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -941,7 +933,6 @@ instance Type Int32   where
   sizeOf = singletonRange
   toTarget _ = id
 instance Type Word64  where
-  {-# SPECIALIZE instance Type Word64 #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -949,7 +940,6 @@ instance Type Word64  where
   sizeOf = singletonRange
   toTarget _ = id
 instance Type Int64   where
-  {-# SPECIALIZE instance Type Int64 #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -957,7 +947,6 @@ instance Type Int64   where
   sizeOf = singletonRange
   toTarget _ = id
 instance Type WordN   where
-  {-# SPECIALIZE instance Type WordN #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -965,7 +954,6 @@ instance Type WordN   where
   sizeOf = singletonRange
   toTarget = fromWordN
 instance Type IntN    where
-  {-# SPECIALIZE instance Type IntN #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -973,7 +961,6 @@ instance Type IntN    where
   sizeOf = singletonRange
   toTarget = fromIntN
 instance Type Float   where
-  {-# SPECIALIZE instance Type Float #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
@@ -981,7 +968,6 @@ instance Type Float   where
   sizeOf _ = AnySize
   toTarget _ = id
 instance Type Double  where
-  {-# SPECIALIZE instance Type Double #-}
   {-# INLINABLE typeRep #-}
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
