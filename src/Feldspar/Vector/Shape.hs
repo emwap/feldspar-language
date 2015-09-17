@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP               #-}
 {-# LANGUAGE GADTs             #-}
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
@@ -8,6 +9,9 @@
 module Feldspar.Vector.Shape where
 
 import qualified Prelude as P
+#if defined(MIN_VERSION_base) && MIN_VERSION_base(4,7,0)
+import GHC.Stack
+#endif
 
 import Feldspar
 import Feldspar.Core.Frontend.LoopM
@@ -81,7 +85,11 @@ shapeEq (sh1 :. i) (sh2 :. j) = i == j && shapeEq sh1 sh2
 class Shapely sh where
   zeroDim   :: Shape sh
   unitDim   :: Shape sh
+#if defined(MIN_VERSION_base) && MIN_VERSION_base(4,7,0)
+  fakeShape :: (?cs :: CallStack) => Shape sh
+#else
   fakeShape :: Shape sh
+#endif
   toShape   :: Int -> Data [Length] -> Shape sh
 
 instance Shapely Z where
@@ -103,7 +111,11 @@ instance Shapely sh => Shapely (sh :. Data Length) where
   {-# INLINABLE toShape #-}
   zeroDim   = zeroDim   :. 0
   unitDim   = unitDim   :. 1
-  fakeShape = fakeShape :. P.error "You shall not inspect the syntax tree!"
+#if defined(MIN_VERSION_base) && MIN_VERSION_base(4,7,0)
+  fakeShape = fakeShape :. P.error ("You shall not inspect the syntax tree!\n" P.++ showCallStack ?cs)
+#else
+  fakeShape = fakeShape :. P.error ("You shall not inspect the syntax tree!")
+#endif
   toShape i arr = toShape (i+1) arr :. (arr ! P.fromIntegral i)
 
 -- | Concatenating shapes.
