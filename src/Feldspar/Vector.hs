@@ -448,32 +448,6 @@ sum :: (Syntax a, Num a, Pully vec (sh :. Data Length), Shapely sh) =>
        vec (sh :. Data Length) a -> Pull sh a
 sum = fold (+) 0
 
--- | Concatenating shapes.
-class ShapeConc sh1 sh2 where
-  type ShapeConcT sh1 sh2
-  shapeConc :: Shape sh1 -> Shape sh2 -> Shape (ShapeConcT sh1 sh2)
-
-  splitIndex :: Shape (ShapeConcT sh1 sh2) -> Shape sh1 -> (Shape sh1,Shape sh2)
-
-instance ShapeConc Z sh2 where
-  {-# SPECIALIZE instance ShapeConc Z sh2 #-}
-  {-# INLINABLE shapeConc #-}
-  {-# INLINABLE splitIndex #-}
-  type ShapeConcT Z sh2 = sh2
-  shapeConc Z sh2 = sh2
-
-  splitIndex sh Z = (Z,sh)
-
-instance ShapeConc sh1 sh2 => ShapeConc (sh1 :. Data Length) sh2 where
-  {-# SPECIALIZE instance ShapeConc sh1 sh2 => ShapeConc (sh1 :. Data Length) sh2 #-}
-  {-# INLINABLE shapeConc #-}
-  {-# INLINABLE splitIndex #-}
-  type ShapeConcT (sh1 :. Data Length) sh2 = ShapeConcT sh1 sh2 :. Data Length
-  shapeConc (sh1 :. l) sh2 = shapeConc sh1 sh2 :. l
-
-  splitIndex (sh :. i) (sh1 :. _) = (i1 :. i,i2)
-    where (i1,i2) = splitIndex sh sh1
-
 -- | Flatten nested pull vectors.
 flatten :: forall a sh1 sh2.
            (Shapely (ShapeConcT sh1 sh2), ShapeConc sh1 sh2) =>

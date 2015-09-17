@@ -1,6 +1,9 @@
 {-# LANGUAGE GADTs             #-}
+{-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ImplicitParams    #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Feldspar.Vector.Shape where
 
@@ -102,6 +105,30 @@ instance Shapely sh => Shapely (sh :. Data Length) where
   unitDim   = unitDim   :. 1
   fakeShape = fakeShape :. P.error "You shall not inspect the syntax tree!"
   toShape i arr = toShape (i+1) arr :. (arr ! P.fromIntegral i)
+
+-- | Concatenating shapes.
+class ShapeConc sh1 sh2 where
+  type ShapeConcT sh1 sh2
+  shapeConc  :: Shape sh1 -> Shape sh2 -> Shape (ShapeConcT sh1 sh2)
+  splitIndex :: Shape (ShapeConcT sh1 sh2) -> Shape sh1 -> (Shape sh1,Shape sh2)
+
+instance ShapeConc Z sh2 where
+  {-# SPECIALIZE instance ShapeConc Z sh2 #-}
+  {-# INLINABLE shapeConc #-}
+  {-# INLINABLE splitIndex #-}
+  type ShapeConcT Z sh2 = sh2
+  shapeConc Z sh2 = sh2
+  splitIndex sh Z = (Z,sh)
+
+instance ShapeConc sh1 sh2 => ShapeConc (sh1 :. Data Length) sh2 where
+  {-# SPECIALIZE instance ShapeConc sh1 sh2 => ShapeConc (sh1 :. Data Length) sh2 #-}
+  {-# INLINABLE shapeConc #-}
+  {-# INLINABLE splitIndex #-}
+  type ShapeConcT (sh1 :. Data Length) sh2 = ShapeConcT sh1 sh2 :. Data Length
+  shapeConc (sh1 :. l) sh2 = shapeConc sh1 sh2 :. l
+  splitIndex (sh :. i) (sh1 :. _) = (i1 :. i,i2)
+    where (i1,i2) = splitIndex sh sh1
+
 
 -- KFFs extensions
 
