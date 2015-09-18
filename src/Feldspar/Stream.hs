@@ -70,7 +70,7 @@ import Control.Applicative
 import Feldspar
 import Feldspar.Vector
           (Pull, Pull1, fromZero, toPull, arrToManifest
-          ,freezePull1, indexed1, value1, fromList
+          ,freezePull1, indexed1, fromList
           ,sum,length,replicate1,scalarProd)
 import Feldspar.Vector.Shape (Shape(..),DIM1)
 import Feldspar.Mutable
@@ -396,7 +396,7 @@ recurrenceI :: (Type a, Type b) =>
                (Pull1 a -> Data b) ->
                Stream (Data b)
 recurrenceI ii stream mkExpr
-    = recurrenceIO ii stream (toPull $ value1 []) (\i _ -> mkExpr i)
+    = recurrenceIO ii stream (value []) (\i _ -> mkExpr i)
 
 -- | 'recurrenceIO' is a combination of 'recurrenceO' and 'recurrenceI'. It
 --   has an input stream and the recurrence equation may refer both to

@@ -31,7 +31,7 @@ fibRef i = fibs P.!! i
     fibs = 0 : 1 : P.zipWith (+) fibs (P.tail fibs)
 
 fibFeld :: Numeric a => Int -> a
-fibFeld = eval (recurrenceO (thawPull1 $ fromList [0,1]) (\fib -> fib!!0 + fib!!1) !) . P.toEnum
+fibFeld = eval (recurrenceO (thawPull1 $ value [0,1]) (\fib -> fib!!0 + fib!!1) !) . P.toEnum
 
 prop_fib = forAll (choose (0,20)) $ \i -> fibRef (i+2) P.== (fibFeld i :: WordN)
 
@@ -42,7 +42,7 @@ firRef :: Num a => [a] -> [a] -> [a]
 firRef coeffs inp = [scProd coeffs is | is <- P.map P.reverse $ P.tail $ List.inits inp]
 
 firFeld :: [Int32] -> [Int32] -> [Int32]
-firFeld coeffs = eval (freezePull1 . streamAsVector (fir (toPull $ value1 coeffs)) . thawPull1)
+firFeld coeffs = eval (freezePull1 . streamAsVector (fir (value coeffs)) . thawPull1)
 
 prop_fir (NonEmpty coeffs) = firRef coeffs ==== firFeld coeffs
 
@@ -68,11 +68,10 @@ iirInt a b inp =
 iirFeld :: [Int32] -> [Int32] -> [Int32] -> [Int32]
 iirFeld as bs = eval (freezePull1 . iirVec . thawPull1)
   where
-    iirVec = streamAsVector (iirInt (toPull $ value1 as) (toPull $ value1 bs))
+    iirVec = streamAsVector (iirInt (value as) (value bs))
 
 prop_iir (NonEmpty as) (NonEmpty bs) = iirRef as bs ==== iirFeld as bs
 
 
 
 tests = $(testGroupGenerator)
-

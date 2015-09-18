@@ -32,7 +32,7 @@ module Feldspar.Vector (
   All(..),Any(..),Slice(..),FullShape,SliceShape,sliceOfFull,fullOfSlice,
   -- * Functions on one-dimensional vectors
   Pull1,Vector,Vector1,
-  value1,indexed1,(!!),
+  indexed1,(!!),
   length,take,drop,splitAt,head,last,tail,init,tails,inits,inits1,
   rotateVecL,rotateVecR,replicate1,enumFromTo,enumFrom,(...),fold1,
   maximum,minimum,or,and,any,all,eqVector,scalarProd,chunk,
@@ -602,9 +602,6 @@ type Vector a = Pull DIM1 a
 {-# DEPRECATED Vector "Use Pull instead" #-}
 type Vector1 a = Pull1 a
 {-# DEPRECATED Vector1 "Use Pull1 instead" #-}
-
-value1 :: Syntax a => [Internal a] -> Manifest DIM1 a
-value1 ls = value ls
 
 -- | Create a one-dimensional Pull vector
 indexed1 :: Data Length -> (Data Index -> a) -> Pull DIM1 a
