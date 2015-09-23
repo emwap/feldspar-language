@@ -4,6 +4,7 @@
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ImplicitParams    #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Feldspar.Vector.Shape where
@@ -12,6 +13,8 @@ import qualified Prelude as P
 #if defined(MIN_VERSION_base) && MIN_VERSION_base(4,7,0)
 import GHC.Stack
 #endif
+
+import Data.Monoid
 
 import Feldspar
 import Feldspar.Core.Frontend.LoopM
@@ -30,19 +33,27 @@ data Shape sh where
   Z :: Shape Z
   (:.) :: Shape tail -> Data Length -> Shape (tail :. Data Length)
 
+foldShape :: forall sh m. (Monoid m)
+          => (Data Length -> m) -> Shape sh -> m
+foldShape f = go
+  where
+    go :: forall sh'. Shape sh' -> m
+    go Z         = mempty
+    go (sh :. l) = go sh `mappend` f l
+
 -- | The dimensionality of @sh@
 dim :: Shape sh -> Int
-dim Z = 0
-dim (sh :. _) = 1 + dim sh
+dim = P.length . toList
+{-# INLINABLE dim #-}
 
 -- | The total number of elements in @sh@
 size :: Shape sh -> Data Length
-size Z = 1
-size (sh :. i) = size sh * i
+size = P.product . toList
+{-# INLINABLE size #-}
 
 toIndex :: Shape sh -> Shape sh -> Data Index
 toIndex Z Z = 0
-toIndex (sh1 :. sh2) (sh1' :. sh2') = toIndex sh1 sh1' * sh2 + sh2'
+toIndex (sh1 :. sh2) (sh1' :. sh2') = sh2' + sh2 * toIndex sh1 sh1'
 
 fromIndex :: Shape sh -> Data Index -> Shape sh
 fromIndex Z _ = Z
@@ -73,14 +84,17 @@ forShape (sh :. l) k = forM l (\i -> forShape sh (\sh -> k (sh :. i)))
 toList :: Shape sh -> [Data Length]
 toList Z         = []
 toList (sh :. i) = i : toList sh
+{-# INLINABLE toList #-}
 
 -- | Deconstruct the shape
 uncons :: Shape (sh :. Data Length) -> (Shape sh, Data Length)
 uncons (sh :. i) = (sh,i)
+{-# INLINABLE uncons #-}
 
 shapeEq :: Shape sh -> Shape sh -> Data Bool
 shapeEq Z Z = true
 shapeEq (sh1 :. i) (sh2 :. j) = i == j && shapeEq sh1 sh2
+{-# INLINABLE shapeEq #-}
 
 class Shapely sh where
   zeroDim   :: Shape sh

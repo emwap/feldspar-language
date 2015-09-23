@@ -1,6 +1,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 --
 -- Copyright (c) 2009-2011, ERICSSON AB
@@ -68,10 +70,10 @@ import qualified Control.Monad as P
 import Control.Applicative
 
 import Feldspar
-import Feldspar.Vector
-          (Pull, Pull1, fromZero, toPull, arrToManifest
-          ,freezePull1, indexed1, fromList
-          ,sum,length,replicate1,scalarProd)
+import Feldspar.Vector ( Pull, Pull1, Manifest
+                       , fromZero, toPull, indexed1
+                       , sum,length,replicate1,scalarProd
+                       )
 import Feldspar.Vector.Shape (Shape(..),DIM1)
 import Feldspar.Mutable
 
@@ -80,11 +82,32 @@ data Stream a where
   Stream :: M (M a) -> Stream a
     -- The outer monadic layer is for initialization and the inner layer
     -- for extracting elements.
+  deriving (Functor)
+
+instance Applicative Stream where
+  pure = repeat
+  (<*>) = app
+
+instance Syntax a => Indexed (Stream a) where
+  (Stream init) ! n = runMutable $ do
+                        next <- init
+                        forM n (\_ -> next)
+                        next
+
+instance Num a => Num (Stream a) where
+  (+) = liftA2 (+)
+  (-) = liftA2 (-)
+  (*) = liftA2 (*)
+  negate = fmap negate
+  abs    = fmap abs
+  signum = fmap signum
+  fromInteger = repeat . fromInteger
 
 type instance Elem      (Stream a) = a
 type instance CollIndex (Stream a) = Data Index
 
 loop = return
+{-# INLINE loop #-}
 
 -- | Take the first element of a stream
 head :: Syntax a => Stream a -> a
@@ -94,7 +117,7 @@ head (Stream init) = runMutable (init >>= id)
 tail :: Syntax a => Stream a -> Stream a
 tail (Stream init) = Stream $ do
     next <- init
-    next
+    _    <- next
     loop next
 
 -- | The stream 'pre v s' first returns 'v' and then behaves like 's'.
@@ -111,7 +134,8 @@ pre v (Stream init) = Stream $ do
 -- | 'map f str' transforms every element of the stream 'str' using the
 --   function 'f'
 map :: (a -> b) -> Stream a -> Stream b
-map f (Stream init) = Stream $ fmap (fmap f) init
+map = fmap
+{-# INLINE map #-}
 
 -- | 'mapNth f n k str' transforms every 'n'th element with offset 'k'
 --    of the stream 'str' using the function 'f'
@@ -277,30 +301,9 @@ zipWith f (Stream init1) (Stream init2) = Stream $ do
 unzip :: (Syntax a, Syntax b) => Stream (a,b) -> (Stream a, Stream b)
 unzip stream = (map fst stream, map snd stream)
 
+-- | Apply a 'Stream' of functions to a 'Stream' of elements
 app :: Stream (a -> b) -> Stream a -> Stream b
 app = zipWith ($)
-
-instance Functor Stream where
-  fmap f = map f
-
-instance Applicative Stream where
-  pure = repeat
-  (<*>) = app
-
-instance Syntax a => Indexed (Stream a) where
-  (Stream init) ! n = runMutable $ do
-                        next <- init
-                        forM n (\_ -> next)
-                        next
-
-instance Num a => Num (Stream a) where
-  (+) = liftA2 (+)
-  (-) = liftA2 (-)
-  (*) = liftA2 (*)
-  negate a = fmap negate a
-  abs    a = fmap abs    a
-  signum a = fmap signum a
-  fromInteger a = repeat (fromInteger a)
 
 -- | 'take n str' allocates 'n' elements from the stream 'str' into a
 --   core array.
@@ -344,18 +347,19 @@ unsafeVectorToStream vec = Stream $ do
 --   the input stream.
 --
 --   This function allocates memory for the output vector.
-streamAsVector :: (Syntax a, Syntax b) =>
-                  (Stream a -> Stream b)
+streamAsVector :: forall a b. (Syntax a, Syntax b)
+               => (Stream a -> Stream b)
                -> (Pull DIM1 a -> Pull DIM1 b)
-streamAsVector f v = toPull $ arrToManifest (fromList [lv], take lv $ f $ unsafeVectorToStream v)
+streamAsVector f v = toPull (sugar $ take lv $ f $ unsafeVectorToStream v :: Manifest DIM1 b)
   where lv = length v
 
 -- | Similar to 'streamAsVector' except the size of the output array is computed by the second argument
 --   which is given the size of the input vector as a result.
-streamAsVectorSize :: (Syntax a, Syntax b) =>
-                      (Stream a -> Stream b) -> (Data Length -> Data Length)
+streamAsVectorSize :: forall a b. (Syntax a, Syntax b)
+                   => (Stream a -> Stream b)
+                   -> (Data Length -> Data Length)
                    -> (Pull DIM1 a -> Pull DIM1 b)
-streamAsVectorSize f s v = toPull $ arrToManifest (fromList [lv], take lv $ f $ cycle v)
+streamAsVectorSize f s v = toPull (sugar $ take lv $ f $ cycle v :: Manifest DIM1 b)
   where lv = s $ length v
 
 -- | A combinator for descibing recurrence equations, or feedback loops.

@@ -65,20 +65,22 @@ initBuffer' buf = do
     calcIndex l i j = (l+i-j-1) `mod` l
 
     freeze :: Syntax b => Data Index -> Data [Internal b] -> Pull DIM1 b
-    freeze i = permute (\l -> calcIndex l i) . map sugar . thawPull1
+    freeze i = permute (`calcIndex` i) . sugar
 
 -- | Create a new cyclic buffer initalized by the given vector (which also determines the size)
 initBuffer :: Syntax a => Pull DIM1 a -> M (Buffer a)
-initBuffer buf = thawArray (freezePull1 $ map desugar buf) >>= initBuffer'
+initBuffer buf = thawArray (desugar buf) >>= initBuffer'
+{-# INLINABLE initBuffer #-}
 
 -- | Create a new cyclic buffer of the given length initialized by the given element
 newBuffer :: Syntax a => Data Length -> a -> M (Buffer a)
 newBuffer l init = newArr l (desugar init) >>= initBuffer'
+{-# INLINABLE newBuffer #-}
 
 -- | Create a new cyclic buffer of the given length without initialization
 newBuffer_ :: Syntax a => Data Length -> M (Buffer a)
 newBuffer_ l = newArr_ l >>= initBuffer'
+{-# INLINABLE newBuffer_ #-}
 
 tM :: Patch a a -> Patch (M a) (M a)
 tM _ = id
-

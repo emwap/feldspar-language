@@ -43,21 +43,23 @@ import Feldspar.Core.Constructs
 import Feldspar.Core.Constructs.Array
 import Feldspar.Core.Frontend.Tuple ()
 
+-- | Create a random access parallel array
 parallel :: Type a => Data Length -> (Data Index -> Data a) -> Data [a]
 parallel = sugarSymF Parallel
 {-# INLINABLE parallel #-}
 
-
+-- | Create an array sequentially from ascending indices
 sequential :: (Type a, Syntax s) =>
               Data Length -> s -> (Data Index -> s -> (Data a,s)) -> Data [a]
 sequential = sugarSymF Sequential
 {-# INLINABLE sequential #-}
 
-
+-- | Append two arrays
 append :: Type a => Data [a] -> Data [a] -> Data [a]
 append = sugarSymF Append
 {-# INLINABLE append #-}
 
+-- | Get the length of an array
 getLength :: Type a => Data [a] -> Data Length
 getLength = sugarSymF GetLength
 {-# INLINABLE getLength #-}

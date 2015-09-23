@@ -11,7 +11,6 @@
 module Feldspar.Vector (
   -- $intro
 
-  module Feldspar.Vector.Shape,
   -- * Pull Vectors
   Pull,
   DPull,Pully(..),
@@ -25,20 +24,6 @@ module Feldspar.Vector (
   halve,
   expandL,expandLT,contractL,contractLT,curryL,uncurryL,dmapL,dzipWithL,
   dmapS,dzipWithS,
-  -- * Shape concatenation
-  ShapeConc(..),
-  flatten,flattenPush,
-  -- * Slices of Pull vectors
-  All(..),Any(..),Slice(..),FullShape,SliceShape,sliceOfFull,fullOfSlice,
-  -- * Functions on one-dimensional vectors
-  Pull1,Vector,Vector1,
-  indexed1,(!!),
-  length,take,drop,splitAt,head,last,tail,init,tails,inits,inits1,
-  rotateVecL,rotateVecR,replicate1,enumFromTo,enumFrom,(...),fold1,
-  maximum,minimum,or,and,any,all,eqVector,scalarProd,chunk,
-  permute,ixmap,newLen1,
-  -- * Functions on two-dimensional vectors
-  indexed2,mmMult,
   -- * Push vectors
   Push(..),
   DPush,Pushy(..),
@@ -48,21 +33,38 @@ module Feldspar.Vector (
   -- * Manifest vectors
   Manifest,
   Storable(..),
+  -- * Shapes
+  module Feldspar.Vector.Shape,
+  -- * Shape concatenation
+  ShapeConc(..),
+  flatten,flattenPush,
+  -- * Slices of Pull vectors
+  All(..),Any(..),Slice(..),FullShape,SliceShape,sliceOfFull,fullOfSlice,
+  -- * Functions on one-dimensional vectors
+  Pull1,
+  indexed1,(!!),
+  length,take,drop,splitAt,head,last,tail,init,tails,inits,inits1,
+  rotateVecL,rotateVecR,replicate1,enumFromTo,enumFrom,(...),fold1,
+  maximum,minimum,or,and,any,all,eqVector,scalarProd,chunk,
+  permute,ixmap,newLen1,
+  -- * Functions on two-dimensional vectors
+  indexed2,mmMult,
   -- * Flattening vectors
   Flat,FlatManifest,
   storeFlat,
   -- * Overloaded functions
   Shaped(..),ShapeMap(..),
   -- * Patches
-  tVec,tVec1,tPull,tPull1,
+  tPull,tPull1,
   -- * Semiquestionable things
   scan,
-  -- * Ugly hacks
-  freezePull1,arrToManifest,arrToPull,thawPull,thawPull1,thawPush,
-  fromList,fromPush,fromPull,freezePull,freezePush
+  -- * Deprecated functions
+  tVec,tVec1,
+  Vector,Vector1
   ) where
 
 import qualified Prelude as P
+import Data.Monoid (Monoid(..))
 
 import Language.Syntactic hiding (fold,size)
 import Feldspar hiding (desugar,sugar,resugar)
@@ -300,8 +302,7 @@ unit a = Pull (const a) unitDim
 
 -- | Get the one element from a zero-dimensional vector
 fromZero :: Pully vec Z => vec Z a -> a
-fromZero vec = ixf Z
-  where Pull ixf Z = toPull vec
+fromZero = (!:Z)
 -- TODO: A better name.
 
 -- | Index into a vector
@@ -449,30 +450,26 @@ sum :: (Syntax a, Num a, Pully vec (sh :. Data Length), Shapely sh) =>
 sum = fold (+) 0
 
 -- | Flatten nested pull vectors.
-flatten :: forall a sh1 sh2.
-           (Shapely (ShapeConcT sh1 sh2), ShapeConc sh1 sh2) =>
-           Pull sh1 (Pull sh2 a) ->
-           Pull (ShapeConcT sh1 sh2) a
-flatten (Pull ixf1 sh1) = Pull ixf sh
-  where ixf i = let (i1,i2) = splitIndex i sh1
+flatten :: ( Shapely sh2
+           , ShapeConc sh1 sh2
+           )
+        => Pull sh1 (Pull sh2 a)
+        -> Pull (ShapeConcT sh1 sh2) a
+flatten (Pull ixf1 sh) = Pull ixf $ shapeConc sh $ extent $ ixf1 sh
+  where ixf i = let (i1,i2) = splitIndex i sh
                     (Pull ixf2 _) = ixf1 i1
                 in ixf2 i2
-        sh = let (i1,_ :: Shape sh2) = splitIndex fakeShape sh1
-                 (Pull _ sh2) = ixf1 i1
-             in shapeConc sh1 sh2
 
 -- | Flatten a pull vector of push vectors.
-flattenPush :: forall a sh1 sh2.
-               (Shapely (ShapeConcT sh1 sh2), ShapeConc sh1 sh2) =>
-               Pull sh1 (Push sh2 a) ->
-               Push (ShapeConcT sh1 sh2) a
-flattenPush (Pull ixf sh1) = Push f sh
-  where f k = forShape sh1 $ \i ->
+flattenPush :: ( Shapely sh2
+               , ShapeConc sh1 sh2
+               )
+            => Pull sh1 (Push sh2 a)
+            -> Push (ShapeConcT sh1 sh2) a
+flattenPush (Pull ixf sh) = Push f $ shapeConc sh $ extent $ ixf sh
+  where f k = forShape sh $ \i ->
                 let Push g _ = ixf i
                 in  g (\j a -> k (shapeConc i j) a)
-        sh = let (i1,_ :: Shape sh2) = splitIndex fakeShape sh1
-                 (Push _ sh2) = ixf i1
-             in shapeConc sh1 sh2
 
 -- | Create a two-dimensional Pull vector
 indexed2 :: Data Length -> Data Length -> (Data Index -> Data Index -> a) -> Pull DIM2 a
@@ -482,9 +479,11 @@ indexed2 l1 l2 ixf = Pull (\(Z :. i1 :. i2) -> ixf i1 i2) (Z :. l1 :. l2)
 
 -- | Transpose the two innermmost dimensions of a vector
 transposeL :: forall sh e vec.
-              (Pully vec (sh :. Data Length :. Data Length), Shapely sh) =>
-              vec  (sh :. Data Length :. Data Length) e ->
-              Pull (sh :. Data Length :. Data Length) e
+              ( Shapely sh
+              , Pully vec (sh :. Data Length :. Data Length)
+              )
+           => vec  (sh :. Data Length :. Data Length) e
+           -> Pull (sh :. Data Length :. Data Length) e
 transposeL vec
   = backpermute new_extent swp vec
   where swp ((tail :: Shape sh) :. i :. j) = tail :. j :. i
@@ -803,6 +802,11 @@ type DPush sh a = Push sh (Data a)
 instance Functor (Push sh) where
   fmap f (Push k l) = Push k' l
     where k' func   = k (\sh a -> func sh (f a))
+
+instance (Shapely sh) => Monoid (Push sh a) where
+  mempty = empty
+  mappend   (Push _ Z)        (Push _ Z)      = empty
+  mappend v@(Push _ (_:._)) w@(Push _ (_:._)) = v ++ w
 
 -- | The empty push vector.
 empty :: Shapely sh => Push sh a
