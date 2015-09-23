@@ -40,6 +40,7 @@ where
 import qualified Prelude as P
 
 import Data.Int
+import Data.Bits
 import Data.Word
 
 import Feldspar.Range
@@ -53,7 +54,7 @@ import Feldspar.Core.Frontend.Logic
 import Feldspar.Core.Frontend.Num
 import Feldspar.Core.Frontend.Ord
 
-class (Ord a, Numeric a, BoundedInt a, P.Integral a, Size a ~ Range a) => Integral a
+class (Ord a, Numeric a, IntegralSuper a) => Integral a
   where
     quot :: Data a -> Data a -> Data a
     quot = sugarSymF Quot

@@ -289,12 +289,7 @@ writeHtmlDecor file = Syntactic.writeHtmlDecorWith showInfo file . reifyFeld def
 eval :: SyntacticFeld a => a -> Internal a
 eval = evalBind . reifyFeld defaultFeldOpts N32
 
-evalTarget
-    :: ( SyntacticFeld a
-       , BoundedInt (GenericInt U n)
-       , BoundedInt (GenericInt S n)
-       )
-    => BitWidth n -> a -> Internal a
+evalTarget :: (SyntacticFeld a) => BitWidth n -> a -> Internal a
 evalTarget n = evalBind . reifyFeld defaultFeldOpts n
   -- TODO This doesn't work yet, because 'targetSpecialization' is not implemented
 

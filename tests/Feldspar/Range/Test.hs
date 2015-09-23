@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE ConstraintKinds #-}
 
@@ -57,7 +56,9 @@ import Feldspar.Lattice
 
 import Debug.Trace
 
-tests = [ testGroup "Range Int"    $ typedTestsSigned   "Int"    (undefined :: Int)
+tests :: [TestTree]
+tests = [ testGroup "Range Bool"   $ typedRangeTests    "Bool"   (undefined :: Bool)
+        , testGroup "Range Int"    $ typedTestsSigned   "Int"    (undefined :: Int)
         , testGroup "Range Int8"   $ typedTestsSigned   "Int8"   (undefined :: Int8)
         , testGroup "Range Word8"  $ typedTestsUnsigned "Word8"  (undefined :: Word8)
         , testGroup "Range Word32" $ typedTestsUnsigned "Word32" (undefined :: Word32)
@@ -68,12 +69,13 @@ tests = [ testGroup "Range Int"    $ typedTestsSigned   "Int"    (undefined :: I
                                 ]
         ]
 
-typedTests name typ =
+typedRangeTests :: (Arbitrary a, Arbitrary (Range a), Bounded a, Ord a, Random a, Show a)
+                => String -> a -> [TestTree]
+typedRangeTests name typ =
     [ testProperty (unwords ["prop_empty"          , name]) (prop_empty typ)
     , testProperty (unwords ["prop_full"           , name]) (prop_full typ)
     , testProperty (unwords ["prop_isEmpty"        , name]) (prop_isEmpty typ)
     , testProperty (unwords ["prop_singletonRange" , name]) (prop_singletonRange typ)
-    , testProperty (unwords ["prop_singletonSize"  , name]) (prop_singletonSize typ)
     , testProperty (unwords ["prop_emptySubRange1" , name]) (prop_emptySubRange1 typ)
     , testProperty (unwords ["prop_emptySubRange2" , name]) (prop_emptySubRange2 typ)
     , testProperty (unwords ["prop_rangeGap"       , name]) (prop_rangeGap typ)
@@ -87,23 +89,27 @@ typedTests name typ =
     , testProperty (unwords ["prop_intersect4"     , name]) (prop_intersect4 typ)
     , testProperty (unwords ["prop_intersect5"     , name]) (prop_intersect5 typ)
     , testProperty (unwords ["prop_disjoint"       , name]) (prop_disjoint typ)
-    , testProperty (unwords ["prop_rangeLess1"     , name]) (prop_rangeLess1 typ)
-    , testProperty (unwords ["prop_rangeLess2"     , name]) (prop_rangeLess2 typ)
-    , testProperty (unwords ["prop_rangeLessEq"    , name]) (prop_rangeLessEq typ)
-    , testProperty (unwords ["prop_rangeByRange1"  , name]) (prop_rangeByRange1 typ)
-    , testProperty (unwords ["prop_rangeByRange2"  , name]) (prop_rangeByRange2 typ)
-    , testProperty (unwords ["prop_fromInteger"    , name]) (prop_fromInteger typ)
+    ]
+
+typedNumTests :: ( Arbitrary a, Arbitrary (Range a), Bounded a, Ord a, Random a, Show a
+                 , FiniteBits a, Integral a
+                 )
+              => String -> a -> [TestTree]
+typedNumTests name typ = typedRangeTests name typ ++
+    [ testProperty (unwords ["prop_fromInteger"    , name]) (prop_fromInteger typ)
     , testProperty (unwords ["prop_abs"            , name]) (prop_abs typ)
+    , testProperty (unwords ["prop_abs2"           , name]) (prop_abs2 typ)
     , testProperty (unwords ["prop_sign"           , name]) (prop_sign typ)
     , testProperty (unwords ["prop_neg"            , name]) (prop_neg typ)
     , testProperty (unwords ["prop_add"            , name]) (prop_add typ)
     , testProperty (unwords ["prop_sub"            , name]) (prop_sub typ)
     , testProperty (unwords ["prop_mul"            , name]) (prop_mul typ)
     , testProperty (unwords ["prop_exp"            , name]) (prop_exp typ)
-    , testProperty (unwords ["prop_abs2"           , name]) (prop_abs2 typ)
     , testProperty (unwords ["prop_or"             , name]) (prop_or typ)
     , testProperty (unwords ["prop_and"            , name]) (prop_and typ)
     , testProperty (unwords ["prop_xor"            , name]) (prop_xor typ)
+    , testProperty (unwords ["prop_rangeRem"       , name]) (prop_rangeRem typ)
+    , testProperty (unwords ["prop_rangeQuot"      , name]) (prop_rangeQuot typ)
     , testProperty (unwords ["prop_rangeMax1"      , name]) (prop_rangeMax1 typ)
     , testProperty (unwords ["prop_rangeMax2"      , name]) (prop_rangeMax2 typ)
     , testProperty (unwords ["prop_rangeMax3"      , name]) (prop_rangeMax3 typ)
@@ -122,17 +128,21 @@ typedTests name typ =
     , testProperty (unwords ["prop_rangeMin7"      , name]) (prop_rangeMin7 typ)
     , testProperty (unwords ["prop_rangeMod1"      , name]) (prop_rangeMod1 typ)
     , testProperty (unwords ["prop_rangeMod2"      , name]) (prop_rangeMod2 typ)
-    , testProperty (unwords ["prop_rangeRem"       , name]) (prop_rangeRem typ)
-    , testProperty (unwords ["prop_rangeQuot"      , name]) (prop_rangeQuot typ)
+    , testProperty (unwords ["prop_rangeLess1"     , name]) (prop_rangeLess1 typ)
+    , testProperty (unwords ["prop_rangeLess2"     , name]) (prop_rangeLess2 typ)
+    , testProperty (unwords ["prop_rangeLessEq"    , name]) (prop_rangeLessEq typ)
+    , testProperty (unwords ["prop_rangeByRange1"  , name]) (prop_rangeByRange1 typ)
+    , testProperty (unwords ["prop_rangeByRange2"  , name]) (prop_rangeByRange2 typ)
     ]
 
-typedTestsUnsigned name typ = typedTests name typ ++
+    -- [ testProperty (unwords ["prop_exp"            , name]) (prop_exp typ)
+
+typedTestsUnsigned name typ = typedNumTests name typ ++
     [ testProperty (unwords ["prop_mulU"           , name]) (prop_mulU typ)
-    , testProperty (unwords ["prop_subSat"         , name]) (prop_subSat typ)
     , testProperty (unwords ["prop_rangeBitCount"  , name]) (prop_rangeBitCount typ)
     ]
 
-typedTestsSigned name typ = typedTests name typ ++
+typedTestsSigned name typ = typedNumTests name typ ++
     [ testProperty (unwords ["prop_isNegative"     , name]) (prop_isNegative typ)
     , testProperty (unwords ["prop_rangeMod3"      , name]) (prop_rangeMod3 typ)
     , testProperty (unwords ["prop_rangeRem1"      , name]) (prop_rangeRem1 typ)
@@ -148,41 +158,84 @@ typedTestsTwo name t1 t2 =
 -- * Testing
 --------------------------------------------------------------------------------
 
-instance (BoundedInt a, Arbitrary a) => Arbitrary (Range a)
-  where
-    arbitrary = do
-      [bound1,bound2] <- vectorOf 2 $ oneof
-                         [ arbitrary
-                         , elements [minBound,-1,0,1,maxBound]]
-      frequency
-                [ (10, return $
-                     Range (min bound1 bound2) (max bound1 bound2))
-                , (1 , return $
-                     Range (max bound1 bound2) (min bound1 bound2)) -- Empty
-                , (1 , return $
-                     Range bound1 bound1)  -- Singleton
-                ]
+arbitraryNumRange :: (Arbitrary a, Bounded a, Num a, Ord a)
+                  => Gen (Range a)
+arbitraryNumRange = do
+  [b1,b2] <- vectorOf 2 $ oneof [arbitrary, elements [minBound,-1,0,1,maxBound]]
+  frequency [ (10, return $ Range (min b1 b2) (max b1 b2))
+            , ( 1, return $ Range (max b1 b2) (min b1 b2)) -- Empty range
+            , ( 1, return $ Range b1 b1)                   -- Singleton range
+            ]
 
-    shrink (Range x y) =
-      [ Range x' y | x' <- shrink x ] ++
-      [ Range x y' | y' <- shrink y ]
+shrinkRange :: (Arbitrary a) => Range a -> [Range a]
+shrinkRange (Range l u) =  [ Range x u | x <- shrink l ]
+                        ++ [ Range l x | x <- shrink u ]
+
+instance Arbitrary (Range Bool) where
+  arbitrary = Range <$> arbitrary <*> arbitrary
+  shrink = shrinkRange
+
+instance Arbitrary (Range Int) where
+  arbitrary = arbitraryNumRange
+  shrink    = shrinkRange
+instance Arbitrary (Range Int8) where
+  arbitrary = arbitraryNumRange
+  shrink    = shrinkRange
+instance Arbitrary (Range Int16) where
+  arbitrary = arbitraryNumRange
+  shrink    = shrinkRange
+instance Arbitrary (Range Int32) where
+  arbitrary = arbitraryNumRange
+  shrink    = shrinkRange
+instance Arbitrary (Range Int64) where
+  arbitrary = arbitraryNumRange
+  shrink    = shrinkRange
+instance Arbitrary (Range Word) where
+  arbitrary = arbitraryNumRange
+  shrink    = shrinkRange
+instance Arbitrary (Range Word8) where
+  arbitrary = arbitraryNumRange
+  shrink    = shrinkRange
+instance Arbitrary (Range Word16) where
+  arbitrary = arbitraryNumRange
+  shrink    = shrinkRange
+instance Arbitrary (Range Word32) where
+  arbitrary = arbitraryNumRange
+  shrink    = shrinkRange
+instance Arbitrary (Range Word64) where
+  arbitrary = arbitraryNumRange
+  shrink    = shrinkRange
+
+-- instance (Arbitrary a, Bounded a, Num a, Ord a) => Arbitrary (Range a)
+--   where
+--     arbitrary = do
+--       [bound1,bound2] <- vectorOf 2 $ oneof
+--                          [ arbitrary
+--                          , elements [minBound,-1,0,1,maxBound]]
+--       frequency
+--                 [ (10, return $
+--                      Range (min bound1 bound2) (max bound1 bound2))
+--                 , (1 , return $
+--                      Range (max bound1 bound2) (min bound1 bound2)) -- Empty
+--                 , (1 , return $
+--                      Range bound1 bound1)  -- Singleton
+--                 ]
+--
+--     shrink (Range x y) =
+--       [ Range x' y | x' <- shrink x ] ++
+--       [ Range x y' | y' <- shrink y ]
 
 newtype EmptyRange a = EmptyRange {getEmpty :: Range a}
   deriving (Eq, Show)
 
-instance (Arbitrary a, Random a, Ord a, Bounded a) => Arbitrary (EmptyRange a) where
-    arbitrary = do
-      l <- arbitrary `suchThat` (>(minBound :: a))
-      return $ EmptyRange $ Range l minBound
+instance (Arbitrary (Range a), Random a, Ord a, Bounded a) => Arbitrary (EmptyRange a) where
+    arbitrary = EmptyRange <$> arbitrary `suchThat` isEmpty
 
 newtype NonEmptyRange a = NonEmptyRange {getNonEmpty :: Range a}
   deriving (Eq, Show)
 
-instance (Arbitrary a, Random a, Ord a, Bounded a) => Arbitrary (NonEmptyRange a) where
-    arbitrary = do
-      l <- arbitrary `suchThat` (<(maxBound :: a))
-      u <- choose (l,maxBound)
-      return $ NonEmptyRange $ Range l u
+instance (Arbitrary (Range a), Random a, Ord a, Bounded a) => Arbitrary (NonEmptyRange a) where
+    arbitrary = NonEmptyRange <$> arbitrary `suchThat` (not . isEmpty)
 
 -- | Generate a range guaranteed to include the element
 aroundRange :: (Bounded a, Random a) => a -> Gen (Range a)
@@ -191,7 +244,8 @@ aroundRange x = do
     u <- choose (x,maxBound)
     return $ Range l u
 
-disjointRanges :: (Arbitrary a, Num a, Ord a, Bounded a, Random a) => Gen (Range a, Range a)
+disjointRanges :: (Arbitrary (Range a), Ord a, Bounded a, Random a)
+               => Gen (Range a, Range a)
 disjointRanges = do
     NonEmptyRange r <- arbitrary
     u1 <- choose (minBound,lowerBound r)
@@ -202,7 +256,7 @@ disjointRanges = do
 
 prop_disjointGen t = forAll disjointRanges $ \(r1,r2) -> disjoint r1 (r2 `rangeTy`t)
 
-fromRange :: (BoundedInt a, Random a) => Range a -> Gen a
+fromRange :: (Ord a, Random a) => Range a -> Gen a
 fromRange r
     | isEmpty r = error "fromRange: empty range"
     | otherwise = frequency [(1,return (lowerBound r))
@@ -217,10 +271,7 @@ rangeTy r _ = r
 -- with for Feldspar.
 --
 -- Example usage: 'atAllTypes (quickCheck . prop_mul)'
-atAllTypes :: (Monad m) =>
-              (forall t . (Show t, BoundedInt t, Random t, Arbitrary t, Typeable t) =>
-                      t -> m a)
-                  -> m ()
+atAllTypes :: (Monad m) => (forall t . t -> m a) -> m ()
 atAllTypes test = sequence_ [test (undefined :: Int)
                             ,test (undefined :: Int8)
                             ,test (undefined :: Word32)
@@ -259,7 +310,7 @@ prop_isEmpty t (EmptyRange r) = isEmpty (r `rangeTy` t)
 
 prop_singletonRange t a = isSingleton (singletonRange (a `asTypeOf` t))
 
-prop_singletonSize t r = isSingleton (r `rangeTy` t) ==> (rangeSize r == 1)
+-- prop_singletonSize t r = isSingleton (r `rangeTy` t) ==> (rangeSize r == 1)
 
 prop_emptySubRange1 t (EmptyRange r1) (NonEmptyRange r2) =
     not (r2 `isSubRangeOf` (r1 `rangeTy` t))
@@ -267,6 +318,7 @@ prop_emptySubRange1 t (EmptyRange r1) (NonEmptyRange r2) =
 prop_emptySubRange2 t (EmptyRange r1) (NonEmptyRange r2) =
     r1 `isSubRangeOf` (r2 `rangeTy` t)
 
+prop_rangeGap :: (Bounded a, Ord a) => a -> Range a -> Range a -> Bool
 prop_rangeGap t r1 r2 =
     (isEmpty gap1 && isEmpty gap2) || (gap1 == gap2)
   where
@@ -274,16 +326,20 @@ prop_rangeGap t r1 r2 =
     gap2 = rangeGap r2 r1
     _    = r1 `rangeTy` t
 
+prop_union1 :: (Bounded a, Ord a) => a -> a -> Range a -> Range a -> Property
 prop_union1 t x r1 r2 =
     ((x `inRange` r1) || (x `inRange` r2)) ==> (x `inRange` (r1\/r2))
   where _ = x `asTypeOf` t
 
+prop_union2 :: (Bounded a, Ord a) => a -> a -> Range a -> Range a -> Property
 prop_union2 t x r1 r2 =
     (x `inRange` (r1\/r2)) ==>
         ((x `inRange` r1) || (x `inRange` r2) || (x `inRange` rangeGap r1 r2))
-  where _ = x `asTypeOf` t
 
+prop_union3 :: (Bounded a, Ord a) => a -> Range a -> Range a -> Bool
 prop_union3 t r1 r2 = (r1 `rangeTy` t) `isSubRangeOf` (r1\/r2)
+
+prop_union4 :: (Bounded a, Ord a) => a -> Range a -> Range a -> Bool
 prop_union4 t r1 r2 = (r2 `rangeTy` t) `isSubRangeOf` (r1\/r2)
 
 
@@ -305,8 +361,9 @@ prop_intersect5 t r1 r2 =
   where _ = r1 `rangeTy` t
 
 prop_disjoint t = forAll disjointRanges $ \(r1,r2) ->
-                    forAll (fromRange r1) $ \x ->
-                      not (x `inRange` (r2 `rangeTy` t))
+                    disjoint r1 r2 ==>
+                      forAll (fromRange r1) $ \x ->
+                        not (x `inRange` (r2 `rangeTy` t))
 
 
 prop_rangeLess1 t r1 r2 =
@@ -331,8 +388,8 @@ prop_rangeLessEq t r1 r2 =
 -- ** Propagation
 --------------------------------------------------------------------------------
 
-prop_propagation1 :: (Show t, BoundedInt t, Random t) =>
-                     t -> (forall a . Num a => a -> a) -> Range t -> Property
+prop_propagation1 :: (Bounded t, FiniteBits t, Num t, Ord t, Random t, Show t)
+                  => t -> (forall a . (Num a) => a -> a) -> Range t -> Property
 prop_propagation1 _ op r =
     not (isEmpty r) ==>
     forAll (fromRange r) $ \x ->
@@ -347,7 +404,7 @@ prop_propagation1 _ op r =
 -- The third argument is a precondition that is satisfied before the test is
 -- run. A good example is to make sure that the second argument is non-zero
 -- when testing division.
-rangePropagationSafetyPre :: (Show t, Random t, BoundedInt t, BoundedInt a) =>
+rangePropagationSafetyPre :: (Ord a, Ord t, Random t, Show t) =>
     t ->
     (t -> t -> a) -> (Range t -> Range t -> Range a) ->
     (t -> t -> Bool) ->
@@ -360,11 +417,13 @@ rangePropagationSafetyPre _ op rop pre r1 r2 =
         op v1 v2 `inRange` rop r1 r2
 
 rangePropagationSafetyPre2 ::
-    (Show t, Show t2, Random t, BoundedInt t, Random t2, BoundedInt t2, BoundedInt a) =>
-    t -> t2 ->
-    (t -> t2 -> a) -> (Range t -> Range t2 -> Range a) ->
-    (t -> t2 -> Bool) ->
-    Range t -> Range t2 -> Property
+    (Ord a, Random a, Show a
+    ,Ord b, Random b, Show b
+    ,Ord c) =>
+    a -> b ->
+    (a -> b -> c) -> (Range a -> Range b -> Range c) ->
+    (a -> b -> Bool) ->
+    Range a -> Range b -> Property
 rangePropagationSafetyPre2 _ _ op rop pre r1 r2 =
     not (isEmpty r1) && not (isEmpty r2) ==>
     forAll (fromRange r1) $ \v1 ->
@@ -383,7 +442,8 @@ rangePropSafety1 t op rop ran =
   where _ = ran `rangeTy` t
 
 prop_propagation2
-    :: (Show t, BoundedInt t, Random t) => t -> (forall a . Num a => a -> a -> a)
+    :: (Bounded t, FiniteBits t, Num t, Ord t, Random t, Show t)
+    => t -> (forall a . Num a => a -> a -> a)
     -> Range t -> Range t -> Property
 prop_propagation2 t op = rangePropagationSafety t op op
 
@@ -397,6 +457,7 @@ prop_rangeByRange1 t ra rb =
 
 prop_rangeByRange2 t = prop_isStrict2 t rangeByRange
 
+prop_fromInteger :: (Bounded a, FiniteBits a, Num a, Ord a) => a -> Integer -> Bool
 prop_fromInteger t a = isSingleton (fromInteger a `rangeTy` t)
 
 prop_abs  t = prop_propagation1 t abs
@@ -408,9 +469,7 @@ prop_mul  t = prop_propagation2 t (*)
 
 prop_exp  t = rangePropagationSafetyPre t (^) rangeExp (\_ e -> e >= 0)
 
-prop_mulU t = rangePropagationSafety t (*) rangeMulUnsigned
-
-prop_subSat t = rangePropagationSafety t subSat rangeSubSat
+prop_mulU t = rangePropagationSafety t (*) rangeMul
 
 prop_isNegative t r =
     not (isEmpty r) && (r /= Range minBound minBound) ==>
@@ -434,6 +493,7 @@ prop_shiftRU t1 t2
     = rangePropagationSafetyPre2 t1 t2 fixShiftR rangeShiftRU (\_ _ -> True)
   where fixShiftR = correctShiftRU
 
+prop_rangeMax1 :: (Ord a) => a -> Range a -> Bool
 prop_rangeMax1 t r1 = rangeMax r1 r1 == (r1 `rangeTy` t)
 
 prop_rangeMax2 t r1 r2 =
@@ -457,6 +517,7 @@ prop_rangeMax5_1 t (EmptyRange r1) (NonEmptyRange r2) =
 prop_rangeMax5_2 t (NonEmptyRange r1) (EmptyRange r2) =
     rangeMax r1 r2 == (r1 `rangeTy` t)
 
+prop_rangeMax6 :: (Ord t) => t -> t -> t -> Bool
 prop_rangeMax6 t v1 v2 =
     max v1 v2 `inRange` rangeMax (singletonRange v1) (singletonRange v2)
   where _ = v1 `asTypeOf` t
@@ -530,25 +591,25 @@ prop_rangeQuot1 t =
 --   Avoids division by zero and arithmetic overflow.
 divPre v1 v2 = v2 /= 0 && not (v1 == minBound && v2 == (-1))
 
-prop_rangeBitCount :: (Show t, BoundedInt t) => t -> NonEmptyRange t -> Bool
-prop_rangeBitCount t (NonEmptyRange (r@(Range l u))) = and
-    [ r' `isSubRangeOf` Range 0 (fromIntegral (finiteBitSize (undefined `asTypeOf` t)))
-    , l' <= fromIntegral (popCount l) || l' <= fromIntegral (popCount u)
-    , u' >= fromIntegral (popCount l) || u' >= fromIntegral (popCount u)
-    ]
+prop_rangeBitCount :: (Bounded t, FiniteBits t, Integral t, Num t, Ord t, Show t)
+                   => t -> NonEmptyRange t -> Bool
+prop_rangeBitCount t (NonEmptyRange (r@(Range l u)))
+    =  r' `isSubRangeOf` Range 0 (fromIntegral (finiteBitSize (undefined `asTypeOf` t)))
+    && l' <= fromIntegral (popCount l) || l' <= fromIntegral (popCount u)
+    && u' >= fromIntegral (popCount l) || u' >= fromIntegral (popCount u)
   where r'@(Range l' u') = rangeBitCount r `asTypeOf` r
 
 -- This property enumerates all values in the range, so it is expensive for large types
-prop_rangeBitCountBruteForce :: (Show t, BoundedInt t) => t -> Range t -> Bool
-prop_rangeBitCountBruteForce t r@(Range l u) = and
-    [ fromIntegral l' == x
-    , fromIntegral u' == y
-    ]
+prop_rangeBitCountBruteForce :: (Bounded t, Eq t, FiniteBits t, Integral t)
+                             => t -> Range t -> Bool
+prop_rangeBitCountBruteForce t r@(Range l u) =  fromIntegral l' == x
+                                             && fromIntegral u' == y
   where
     Range x y = rangeBitCount r `asTypeOf` r
     Range l' u' = rangeBitCountBruteForce r `asTypeOf` r
 
-rangeBitCountBruteForce :: (BoundedInt a, BoundedInt b) => Range a -> Range b
+rangeBitCountBruteForce :: (Bits a, Bounded a, Enum a, Ord a, Bounded b, Num b, Ord b)
+                        => Range a -> Range b
 rangeBitCountBruteForce r | isEmpty r = emptyRange
 rangeBitCountBruteForce r@(Range l u) = range (fromIntegral l') (fromIntegral u')
   where

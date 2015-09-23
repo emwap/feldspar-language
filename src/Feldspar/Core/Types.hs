@@ -45,9 +45,10 @@
 module Feldspar.Core.Types where
 
 
+import Data.Orphans ()
 
 import Data.Array.IO
-import Data.Bits
+import Data.Bits.Compat
 import Data.Complex
 import Data.Int
 import Data.IORef
@@ -55,7 +56,7 @@ import Data.List
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 708
 import Data.Typeable (Typeable)
 #else
-import Data.Typeable (Typeable,Typeable1,mkTyCon3,mkTyConApp,typeOf)
+import Data.Typeable (Typeable,Typeable1)
 #endif
 import Data.Word
 import Data.Default
@@ -104,26 +105,16 @@ instance (Lattice a, Lattice b) => Lattice (a :> b)
 -- | Target-dependent unsigned integers
 newtype WordN = WordN Word32
   deriving
-    ( Eq, Ord, Num, Enum, Ix, Real, Integral, Bits, Bounded, Typeable
+    ( Eq, Ord, Num, Enum, Ix, Real, Integral, Bits, FiniteBits, Bounded, Typeable
     , Arbitrary, Random, Storable, NFData, Default
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 708
-    , FiniteBits
-#endif
     )
-
-type instance UnsignedRep WordN = Word32
 
 -- | Target-dependent signed integers
 newtype IntN = IntN Int32
   deriving
-    ( Eq, Ord, Num, Enum, Ix, Real, Integral, Bits, Bounded, Typeable
+    ( Eq, Ord, Num, Enum, Ix, Real, Integral, Bits, FiniteBits, Bounded, Typeable
     , Arbitrary, Random, Storable, NFData, Default
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 708
-    , FiniteBits
-#endif
     )
-
-type instance UnsignedRep IntN = Word32
 
 instance Show WordN
   where
@@ -374,7 +365,10 @@ data TypeRep a
   where
     UnitType      :: TypeRep ()
     BoolType      :: TypeRep Bool
-    IntType       :: ( BoundedInt (GenericInt s n)
+    IntType       :: ( Bounded (GenericInt s n)
+                     , FiniteBits (GenericInt s n)
+                     , Integral (GenericInt s n)
+                     , Ord (GenericInt s n)
                      , Size (GenericInt s n) ~ Range (GenericInt s n)
                      ) =>
                        Signedness s -> BitWidth n -> TypeRep (GenericInt s n)
@@ -1584,10 +1578,10 @@ type instance Size (FVal a)        = Size a
 -- total function with 'Type' as the only constraint.
 data RangeSet a
   where
-    RangeSet  :: BoundedInt a => Range a -> RangeSet a
+    RangeSet  :: (Bounded a, Bits a, Eq a, Ord a) => Range a -> RangeSet a
     Universal :: RangeSet a
 
-deriving instance Show a => Show (RangeSet a)
+deriving instance (Show a) => Show (RangeSet a)
 
 -- | Cast a 'Size' to a 'RangeSet'
 sizeToRange :: forall a . Type a => Size a -> RangeSet a
@@ -1616,50 +1610,3 @@ tLength = id
 tArr :: Patch a a -> Patch [a] [a]
 tArr _ = id
 {-# INLINABLE tArr #-}
-
-
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 708
-
--- Typeable instances for 8+-tuples for GHC 7.6.x.
-
-instance (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f, Typeable g, Typeable h) => Typeable (a,b,c,d,e,f,g,h) where
-  typeOf (a,b,c,d,e,f,g,h) =
-     mkTyConApp (mkTyCon3 "GHC" "Tuple" "(,)") [ typeOf a, typeOf b, typeOf c, typeOf d, typeOf e, typeOf f, typeOf g, typeOf h ]
-
-instance (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f, Typeable g, Typeable h, Typeable i) => Typeable (a,b,c,d,e,f,g,h,i) where
-  typeOf (a,b,c,d,e,f,g,h,i) =
-     mkTyConApp (mkTyCon3 "GHC" "Tuple" "(,)") [ typeOf a, typeOf b, typeOf c, typeOf d, typeOf e, typeOf f, typeOf g, typeOf h, typeOf i ]
-
-instance (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f, Typeable g, Typeable h, Typeable i, Typeable j) => Typeable (a,b,c,d,e,f,g,h,i,j) where
-  typeOf (a,b,c,d,e,f,g,h,i,j) =
-     mkTyConApp (mkTyCon3 "GHC" "Tuple" "(,)") [ typeOf a, typeOf b, typeOf c, typeOf d, typeOf e, typeOf f, typeOf g, typeOf h, typeOf i, typeOf j ]
-
-instance (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f, Typeable g, Typeable h, Typeable i, Typeable j, Typeable k) => Typeable (a,b,c,d,e,f,g,h,i,j,k) where
-  typeOf (a,b,c,d,e,f,g,h,i,j,k) =
-     mkTyConApp (mkTyCon3 "GHC" "Tuple" "(,)") [ typeOf a, typeOf b, typeOf c, typeOf d, typeOf e, typeOf f, typeOf g, typeOf h, typeOf i, typeOf j, typeOf k ]
-
-instance (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f, Typeable g, Typeable h, Typeable i, Typeable j, Typeable k, Typeable l) => Typeable (a,b,c,d,e,f,g,h,i,j,k,l) where
-  typeOf (a,b,c,d,e,f,g,h,i,j,k,l) =
-     mkTyConApp (mkTyCon3 "GHC" "Tuple" "(,)") [ typeOf a, typeOf b, typeOf c, typeOf d, typeOf e, typeOf f, typeOf g, typeOf h, typeOf i, typeOf j, typeOf k, typeOf l ]
-
-instance (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f, Typeable g, Typeable h, Typeable i, Typeable j, Typeable k, Typeable l, Typeable m) => Typeable (a,b,c,d,e,f,g,h,i,j,k,l,m) where
-  typeOf (a,b,c,d,e,f,g,h,i,j,k,l,m) =
-     mkTyConApp (mkTyCon3 "GHC" "Tuple" "(,)") [ typeOf a, typeOf b, typeOf c, typeOf d, typeOf e, typeOf f, typeOf g, typeOf h, typeOf i, typeOf j, typeOf k, typeOf l, typeOf m ]
-
-instance (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f, Typeable g, Typeable h, Typeable i, Typeable j, Typeable k, Typeable l, Typeable m, Typeable n) => Typeable (a,b,c,d,e,f,g,h,i,j,k,l,m,n) where
-  typeOf (a,b,c,d,e,f,g,h,i,j,k,l,m,n) =
-     mkTyConApp (mkTyCon3 "GHC" "Tuple" "(,)") [ typeOf a, typeOf b, typeOf c, typeOf d, typeOf e, typeOf f, typeOf g, typeOf h, typeOf i, typeOf j, typeOf k, typeOf l, typeOf m, typeOf n ]
-
-instance (Typeable a, Typeable b, Typeable c, Typeable d, Typeable e, Typeable f, Typeable g, Typeable h, Typeable i, Typeable j, Typeable k, Typeable l, Typeable m, Typeable n, Typeable o) => Typeable (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) where
-  typeOf (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) =
-     mkTyConApp (mkTyCon3 "GHC" "Tuple" "(,)") [ typeOf a, typeOf b, typeOf c, typeOf d, typeOf e, typeOf f, typeOf g, typeOf h, typeOf i, typeOf j, typeOf k, typeOf l, typeOf m, typeOf n, typeOf o ]
-#else
-deriving instance Typeable (,,,,,,,)
-deriving instance Typeable (,,,,,,,,)
-deriving instance Typeable (,,,,,,,,,)
-deriving instance Typeable (,,,,,,,,,,)
-deriving instance Typeable (,,,,,,,,,,,)
-deriving instance Typeable (,,,,,,,,,,,,)
-deriving instance Typeable (,,,,,,,,,,,,,)
-deriving instance Typeable (,,,,,,,,,,,,,,)
-#endif

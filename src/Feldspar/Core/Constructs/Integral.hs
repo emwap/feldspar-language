@@ -38,9 +38,10 @@
 
 module Feldspar.Core.Constructs.Integral
     ( INTEGRAL (..)
+    , IntegralSuper
     ) where
 
-import Data.Bits
+import Data.Bits.Compat
 
 import Language.Syntactic
 import Language.Syntactic.Constructs.Binding
@@ -55,13 +56,20 @@ import Feldspar.Core.Constructs.Ord
 import Feldspar.Core.Constructs.Logic
 import Feldspar.Core.Constructs.Complex
 
+type IntegralSuper a = ( Type a
+                       , Bounded a
+                       , FiniteBits a
+                       , Integral a
+                       , Size a ~ Range a
+                       )
+
 data INTEGRAL a
   where
-    Quot :: (Type a, BoundedInt a, Size a ~ Range a) => INTEGRAL (a :-> a :-> Full a)
-    Rem  :: (Type a, BoundedInt a, Size a ~ Range a) => INTEGRAL (a :-> a :-> Full a)
-    Div  :: (Type a, BoundedInt a, Size a ~ Range a) => INTEGRAL (a :-> a :-> Full a)
-    Mod  :: (Type a, BoundedInt a, Size a ~ Range a) => INTEGRAL (a :-> a :-> Full a)
-    Exp  :: (Type a, BoundedInt a, Size a ~ Range a) => INTEGRAL (a :-> a :-> Full a)
+    Quot :: (IntegralSuper a) => INTEGRAL (a :-> a :-> Full a)
+    Rem  :: (IntegralSuper a) => INTEGRAL (a :-> a :-> Full a)
+    Div  :: (IntegralSuper a) => INTEGRAL (a :-> a :-> Full a)
+    Mod  :: (IntegralSuper a) => INTEGRAL (a :-> a :-> Full a)
+    Exp  :: (IntegralSuper a) => INTEGRAL (a :-> a :-> Full a)
 
 instance Semantic INTEGRAL
   where
@@ -92,10 +100,10 @@ instance SizeProp (INTEGRAL :|| Type)
     {-# SPECIALIZE instance SizeProp (INTEGRAL :|| Type) #-}
     {-# INLINABLE sizeProp #-}
     sizeProp (C' Quot) (WrapFull a :* WrapFull b :* Nil) = rangeQuot (infoSize a) (infoSize b)
-    sizeProp (C' Rem)  (WrapFull a :* WrapFull b :* Nil) = rangeRem (infoSize a) (infoSize b)
-    sizeProp (C' Div)  (WrapFull a :* WrapFull b :* Nil) = rangeDiv (infoSize a) (infoSize b)
-    sizeProp (C' Mod)  (WrapFull a :* WrapFull b :* Nil) = rangeMod (infoSize a) (infoSize b)
-    sizeProp (C' Exp)  (WrapFull a :* WrapFull b :* Nil) = rangeExp (infoSize a) (infoSize b)
+    sizeProp (C' Rem)  (WrapFull a :* WrapFull b :* Nil) = rangeRem  (infoSize a) (infoSize b)
+    sizeProp (C' Div)  (WrapFull a :* WrapFull b :* Nil) = rangeDiv  (infoSize a) (infoSize b)
+    sizeProp (C' Mod)  (WrapFull a :* WrapFull b :* Nil) = rangeMod  (infoSize a) (infoSize b)
+    sizeProp (C' Exp)  (WrapFull a :* WrapFull b :* Nil) = rangeExp  (infoSize a) (infoSize b)
 
 instance
     ( (INTEGRAL  :||Type) :<: dom
@@ -202,14 +210,13 @@ instance
 -- Auxiliary functions
 
 -- shouldn't be used for negative numbers
-isPowerOfTwo :: (Num a, Bits a) => a -> Bool
+isPowerOfTwo :: (Bits a, Num a) => a -> Bool
 isPowerOfTwo x = x .&. (x - 1) == 0 && (x /= 0)
 
-log2 :: (BoundedInt a, Integral b) => a -> b
-log2 v | v <= 1 = 0
-log2 v = 1 + log2 (shiftR v 1)
+log2 :: (FiniteBits a, Num b) => a -> b
+log2 x = fromIntegral $ finiteBitSize x - 1 - countLeadingZeros x
 
-sameSign :: BoundedInt a => Range a -> Range a -> Bool
+sameSign :: (Bits a, Bounded a, Num a, Ord a) => Range a -> Range a -> Bool
 sameSign ra rb
     =  isNatural  ra && isNatural  rb
     || isNegative ra && isNegative rb

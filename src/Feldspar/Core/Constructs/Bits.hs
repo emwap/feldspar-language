@@ -56,14 +56,14 @@ import Feldspar.Core.Constructs.Logic
 import Feldspar.Core.Constructs.Eq
 import Feldspar.Core.Constructs.Ord
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 708
-import Data.Bits
-#else
-import Data.Bits
-type FiniteBits b = Bits b
-#endif
+import Data.Bits.Compat
 
-type BitsSuper a = (Type a, Bits a, BoundedInt a, Size a ~ Range a)
+type BitsSuper a = ( Type a
+                   , Bounded a
+                   , FiniteBits a
+                   , Ord a
+                   , Size a ~ Range a
+                   )
 
 -- | Bits constructs
 data BITS a
@@ -122,27 +122,27 @@ instance Semantic BITS
 
 liftIntWord :: (a -> Int -> b) -> a -> WordN -> b
 liftIntWord f x = f x . fromIntegral
+{-# INLINABLE liftIntWord #-}
 
 liftInt :: (a -> Int -> b) -> a -> IntN -> b
 liftInt f x = f x . fromIntegral
+{-# INLINABLE liftInt #-}
 
-evalReverseBits :: (Num b, FiniteBits b) => b -> b
-evalReverseBits b = revLoop b 0 (0 `asTypeOf` b)
+evalReverseBits :: (FiniteBits b) => b -> b
+evalReverseBits b = revLoop b 0 zeroBits
   where
     bSz = finiteBitSize b
     revLoop x i n | i >= bSz    = n
                   | testBit x i = revLoop x (i+1) (setBit n (bSz - i - 1))
                   | otherwise   = revLoop x (i+1) n
+{-# INLINABLE evalReverseBits #-}
 
 evalBitScan :: (FiniteBits b) => b -> WordN
-evalBitScan b =
-   if isSigned b
-   then scanLoop b (testBit b (finiteBitSize b - 1)) (finiteBitSize b - 2) 0
-   else scanLoop b False (finiteBitSize b - 1) 0
-  where
-    scanLoop x t i n | i Prelude.< 0            = n
-                     | testBit x i Prelude./= t = n
-                     | otherwise                = scanLoop x t (i-1) (n+1)
+evalBitScan b = fromIntegral
+              $ if isSigned b
+                then countLeadingZeros (complement b) - 1
+                else countLeadingZeros b
+{-# INLINABLE evalBitScan #-}
 
 semanticInstances ''BITS
 
@@ -170,7 +170,7 @@ instance SizeProp (BITS :|| Type)
     {-# SPECIALIZE instance SizeProp (BITS :|| Type) #-}
     {-# INLINABLE sizeProp #-}
     sizeProp (C' BAnd) (WrapFull a :* WrapFull b :* Nil) = rangeAnd (infoSize a) (infoSize b)
-    sizeProp (C' BOr) (WrapFull a :* WrapFull b :* Nil) = rangeOr (infoSize a) (infoSize b)
+    sizeProp (C' BOr)  (WrapFull a :* WrapFull b :* Nil) = rangeOr  (infoSize a) (infoSize b)
     sizeProp (C' BXor) (WrapFull a :* WrapFull b :* Nil) = rangeXor (infoSize a) (infoSize b)
 
     sizeProp (C' ShiftLU) (WrapFull a :* WrapFull b :* Nil) = rangeShiftLU (infoSize a) (infoSize b)
@@ -200,21 +200,21 @@ instance ( (BITS  :|| Type) :<: dom
                             , OptimizeSuper dom
                             ) => Optimize (BITS :|| Type) dom #-}
     constructFeatOpt _ (C' BAnd) (a :* b :* Nil)
-        | Just 0 <- viewLiteral a              = return a
+        | Just zeroBits <- viewLiteral a              = return a
         | Just x <- viewLiteral a, isAllOnes x = return b
-        | Just 0 <- viewLiteral b              = return b
+        | Just zeroBits <- viewLiteral b              = return b
         | Just x <- viewLiteral b, isAllOnes x = return a
 
     constructFeatOpt _ (C' BOr) (a :* b :* Nil)
-        | Just 0 <- viewLiteral a              = return b
+        | Just zeroBits <- viewLiteral a              = return b
         | Just x <- viewLiteral a, isAllOnes x = return a
-        | Just 0 <- viewLiteral b              = return a
+        | Just zeroBits <- viewLiteral b              = return a
         | Just x <- viewLiteral b, isAllOnes x = return b
 
     constructFeatOpt opts (C' BXor) (a :* b :* Nil)
-        | Just 0 <- viewLiteral a              = return b
+        | Just zeroBits <- viewLiteral a              = return b
         | Just x <- viewLiteral a, isAllOnes x = constructFeat opts (c' Complement) (b :* Nil)
-        | Just 0 <- viewLiteral b              = return a
+        | Just zeroBits <- viewLiteral b              = return a
         | Just x <- viewLiteral b, isAllOnes x = constructFeat opts (c' Complement) (a :* Nil)
 
     constructFeatOpt _ (C' BXor) ((xo :$ v1 :$ v2) :* v3 :* Nil)
@@ -231,7 +231,7 @@ instance ( (BITS  :|| Type) :<: dom
         | Just (C' BXor) <- prjF xo
         , Just a <- viewLiteral v2
         , Just b <- viewLiteral v3
-        , a == 2 ^ b
+        , a == bit (fromIntegral b)
         = do tb <- constructFeat opts (c' TestBit) (v1 :* v3 :* Nil)
              constructFeat opts (c' Not) (tb :* Nil)
 
@@ -265,17 +265,16 @@ instance ( (BITS  :|| Type) :<: dom
     {-# INLINABLE constructFeatUnOpt #-}
 
 
-isAllOnes :: (Num a, Bits a) => a -> Bool
-isAllOnes x = x Prelude.== complement 0
+isAllOnes :: (Bits a) => a -> Bool
+isAllOnes x = x Prelude.== complement zeroBits
 
-optZero :: ( Eq b, Num b
+optZero :: ( Typeable a
            , (Literal :|| Type) :<: dom
-           , Typeable a
            , Optimize feature dom
            )
         => FeldOpts -> feature (a :-> (b :-> Full a))
         -> Args (AST (Decor Info (dom :|| Typeable))) (a :-> (b :-> Full a))
         -> Opt (AST (Decor Info (dom :|| Typeable)) (Full a))
 optZero opts f args@(a :* b :* Nil)
-    | Just 0 <- viewLiteral b = return a
-    | otherwise               = constructFeatUnOpt opts f args
+    | Just zeroBits <- viewLiteral b = return a
+    | otherwise                      = constructFeatUnOpt opts f args

@@ -131,12 +131,12 @@ instance ( Cumulative dom
 
     constructFeatOpt _ (C' Sign) (a :* Nil)
         | RangeSet ra <- infoRange (getInfo a)
-        , 0 `rangeLess` ra
+        , isPositive ra
         = return (literalDecor 1)
 
     constructFeatOpt _ (C' Sign) (a :* Nil)
         | RangeSet ra <- infoRange (getInfo a)
-        , ra `rangeLess` 0
+        , isNegative ra
         = return (literalDecor (-1))
 
     constructFeatOpt opts (C' Add) (a :* b :* Nil)

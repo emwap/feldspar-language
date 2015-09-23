@@ -59,8 +59,8 @@ type SizeCap a = Data a -> Data a
 
 -- | @sizeProp prop a b@: A guarantee that @b@ is within the size @(prop sa)@,
 -- where @sa@ is the size of @a@.
-sizeProp :: (Syntax a, Type b) =>
-    (Size (Internal a) -> Size b) -> a -> SizeCap b
+sizeProp :: (Syntax a, Type b)
+         => (Size (Internal a) -> Size b) -> a -> SizeCap b
 sizeProp = sugarSymF . PropSize
 {-# INLINABLE sizeProp #-}
 

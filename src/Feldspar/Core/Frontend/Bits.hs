@@ -54,7 +54,7 @@ import qualified Data.Bits as B
 infixl 5 .<<.,.>>.
 infixl 4 ⊕
 
-class (BitsSuper a, Integral a) => Bits a
+class (BitsSuper a) => Bits a
   where
     -- * Logical operations
     (.&.)         :: Data a -> Data a -> Data a
@@ -172,7 +172,7 @@ instance Bits IntN   where {-# SPECIALIZE instance Bits IntN #-}
 
 -- | Set all bits to one
 allOnes :: Bits a => Data a
-allOnes = complement 0
+allOnes = value $ B.complement B.zeroBits
 {-# INLINABLE allOnes #-}
 
 -- | Set the `n` lowest bits to one

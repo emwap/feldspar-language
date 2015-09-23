@@ -37,7 +37,6 @@ module Feldspar.Core
 
       -- * Feldspar types
     , Range (..)
-    , BoundedInt
     , module Feldspar.Core.Types
 
     -- * Frontend
@@ -55,4 +54,3 @@ import Feldspar.Range
 import Feldspar.Core.Types
 import Feldspar.Core.Frontend
 import Feldspar.Core.Collection
-

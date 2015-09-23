@@ -51,21 +51,15 @@ import Feldspar.Core.Interpretation
 
 data Conversion a
   where
-    F2I     :: (Type a, Integral a, RealFloat b) => Conversion (b :-> Full a)
-    I2N     :: (Type a, Type b, Integral a, Num b
-               ,Size a ~ Range a
-               ) =>
-               Conversion (a :-> Full b)
-    B2I     :: (Type a, Integral a)
-            => Conversion (Bool  :-> Full a)
-    Round   :: (Type a, Integral a, RealFloat b)
-            => Conversion (b :-> Full a)
-    Ceiling :: (Type a, Integral a, RealFloat b)
-            => Conversion (b :-> Full a)
-    Floor   :: (Type a, Integral a, RealFloat b)
-            => Conversion (b :-> Full a)
+    I2N     :: (Num a, Integral b)       => Conversion (b    :-> Full a)
+    B2I     :: (Integral a)              => Conversion (Bool :-> Full a)
+    F2I     :: (Integral a, RealFloat b) => Conversion (b    :-> Full a)
+    Round   :: (Integral a, RealFloat b) => Conversion (b    :-> Full a)
+    Ceiling :: (Integral a, RealFloat b) => Conversion (b    :-> Full a)
+    Floor   :: (Integral a, RealFloat b) => Conversion (b    :-> Full a)
 
-rangeToSize :: Lattice (Size a) => TypeRep a -> Range Integer -> Size a
+rangeToSize :: (Lattice (Size a))
+            => TypeRep a -> Range Integer -> Size a
 rangeToSize (IntType _ _) r = rangeProp r
 rangeToSize _ _             = universal
 {-# INLINABLE rangeToSize #-}
@@ -74,7 +68,7 @@ rangeProp :: forall a . (Bounded a, Integral a) => Range Integer -> Range a
 rangeProp (Range l u)
     | withinBounds l && withinBounds u
         = range (fromIntegral l) (fromIntegral u)
-    | otherwise = range minBound maxBound
+    | otherwise = universal
   where withinBounds i = toInteger (minBound :: a) <= i &&
                          i <= toInteger (maxBound :: a)
 
@@ -109,7 +103,8 @@ instance SizeProp (Conversion :|| Type)
     {-# INLINABLE sizeProp #-}
     sizeProp (C' F2I)     _ = universal
     sizeProp (C' i2n@I2N) (WrapFull a :* Nil)
-        = rangeToSize (resultType i2n) (mapMonotonic toInteger (infoSize a))
+        | RangeSet r <- infoRange a
+        = rangeToSize (resultType i2n) (mapMonotonic toInteger r)
     sizeProp (C' b2i@B2I) _ = rangeToSize (resultType b2i) $ range 0 1
     sizeProp (C' Round)   _ = universal
     sizeProp (C' Ceiling) _ = universal
