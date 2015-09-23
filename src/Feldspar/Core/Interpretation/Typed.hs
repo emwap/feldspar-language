@@ -14,6 +14,8 @@ module Feldspar.Core.Interpretation.Typed
   )
 where
 
+import Data.Typeable (Typeable)
+
 import Language.Syntactic
 import Language.Syntactic.Constructs.Condition  (Condition)
 import Language.Syntactic.Constructs.Decoration (Decor(..))
@@ -30,13 +32,23 @@ class Typed dom
     {-# INLINABLE typeDictSym #-}
     typeDictSym = const Nothing
 
-instance Typed sub => Typed (sub :|| pred) where
-  {-# SPECIALIZE instance (Typed sub) => Typed (sub :|| pred) #-}
+instance Typed (sub :|| Type) where
+  {-# SPECIALIZE instance Typed (sub :|| Type) #-}
+  {-# INLINABLE typeDictSym #-}
+  typeDictSym (C' _) = Just Dict
+
+instance (Typed sub) => Typed (sub :|| Typeable) where
+  {-# SPECIALIZE instance (Typed sub) => Typed (sub :|| Typeable) #-}
   {-# INLINABLE typeDictSym #-}
   typeDictSym (C' s) = typeDictSym s
 
-instance Typed sub => Typed (sub :| pred) where
-  {-# SPECIALIZE instance (Typed sub) => Typed (sub :| pred) #-}
+instance Typed (sub :| Type) where
+  {-# SPECIALIZE instance Typed (sub :| Type) #-}
+  {-# INLINABLE typeDictSym #-}
+  typeDictSym (C _) = Just Dict
+
+instance (Typed sub) => Typed (sub :| Typeable) where
+  {-# SPECIALIZE instance (Typed sub) => Typed (sub :| Typeable) #-}
   {-# INLINABLE typeDictSym #-}
   typeDictSym (C s) = typeDictSym s
 
