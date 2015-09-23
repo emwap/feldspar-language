@@ -50,6 +50,7 @@ import Feldspar.Range
 import Feldspar.Core.Types
 import Feldspar.Core.Interpretation
 import Feldspar.Core.Constructs.Binding
+import Feldspar.Core.Constructs.Literal
 import Feldspar.Core.Constructs.Mutable
 import Feldspar.Core.Constructs.MutableReference
 
@@ -155,6 +156,7 @@ instance SizeProp (Loop :|| Type)
 
 instance ( LoopM Mut :<: dom
          , (Variable :|| Type) :<: dom
+         , (Literal :|| Type) :<: dom
          , CLambda Type :<: dom
          , MONAD Mut :<: dom
          , MutableReference :<: dom
@@ -167,6 +169,7 @@ instance ( LoopM Mut :<: dom
   where
     {-# SPECIALIZE instance ( LoopM Mut :<: dom
                             , (Variable :|| Type) :<: dom
+                            , (Literal :|| Type) :<: dom
                             , CLambda Type :<: dom
                             , MONAD Mut :<: dom
                             , MutableReference :<: dom
@@ -186,6 +189,17 @@ instance ( LoopM Mut :<: dom
 
     optimizeFeat opts a args = optimizeFeatDefault opts a args
     {-# INLINABLE optimizeFeat #-}
+
+    constructFeatOpt opts For (len :* body :* Nil)
+      | Just 0 <- viewLiteral len
+      = constructFeatUnOptDefaultTyp opts voidTypeRep Return (literalDecor () :* Nil)
+
+    constructFeatOpt opts While (c :* _ :* Nil)
+      | RangeSet r <- sizeToRange $ infoSize $ getInfo c :: RangeSet Bool
+      , not $ upperBound r
+      = do
+        ret <- constructFeatUnOptDefaultTyp opts voidTypeRep Return (literalDecor () :* Nil)
+        constructFeatUnOptDefaultTyp opts voidTypeRep Then (c :* ret :* Nil)
 
     constructFeatOpt opts For (len :* (lam1 :$ (bnd :$ getRefV2@(grf :$ ref) :$ bd@(lam3 :$ body))) :* Nil)
       | Just (SubConstr2 (Lambda v1)) <- prjLambda lam1
@@ -252,6 +266,9 @@ instance ( (Loop     :|| Type) :<: dom
         let info' = info { infoSize = snd $ infoSize (getInfo body') }
         cond' <- optimizeFunction opts (optimizeM opts) info' cond
         constructFeat opts sym (init' :* cond' :* body' :* Nil)
+
+    constructFeatOpt _ (C' ForLoop) (len :* ini :* _ :* Nil)
+        | Just 0 <- viewLiteral len = return ini
 
 {-
     constructFeatOpt (C' ForLoop) (len :* initial :* step :* Nil)
