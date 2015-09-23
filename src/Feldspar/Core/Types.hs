@@ -882,7 +882,7 @@ instance Type Bool    where
   {-# INLINABLE sizeOf #-}
   {-# INLINABLE toTarget #-}
   typeRep = BoolType
-  sizeOf _ = AnySize
+  sizeOf b = Range b b
   toTarget _ = id
 instance Type Word8   where
   {-# INLINABLE typeRep #-}
@@ -1531,7 +1531,7 @@ instance Lattice AnySize
 type family Size a
 
 type instance Size ()              = AnySize
-type instance Size Bool            = AnySize
+type instance Size Bool            = Range Bool
 type instance Size Word8           = Range Word8
 type instance Size Int8            = Range Int8
 type instance Size Word16          = Range Word16

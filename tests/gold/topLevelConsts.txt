@@ -14,7 +14,7 @@
                    └╴Lambda 2
                       └╴<<WordN | [1,6]>>
                          └╴condition
-                            ├╴<<Bool>>
+                            ├╴<<Bool | [*,*]>>
                             │  └╴(<)
                             │     ├╴<<WordN | [*,*]>>
                             │     │  └╴var:1

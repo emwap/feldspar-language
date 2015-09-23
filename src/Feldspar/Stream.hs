@@ -395,8 +395,16 @@ recurrenceI :: (Type a, Type b) =>
                Pull1 a -> Stream (Data a) ->
                (Pull1 a -> Data b) ->
                Stream (Data b)
-recurrenceI ii stream mkExpr
-    = recurrenceIO ii stream (value []) (\i _ -> mkExpr i)
+recurrenceI ii (Stream ini) mkExpr = Stream $ do
+    next <- ini
+    ibuf <- initBuffer ii
+    loop $ do
+      a <- next
+      whenM (lenI /= 0) $ putBuf ibuf a
+      b <- withBuf ibuf $ return . mkExpr
+      return b
+  where
+    lenI = length ii
 
 -- | 'recurrenceIO' is a combination of 'recurrenceO' and 'recurrenceI'. It
 --   has an input stream and the recurrence equation may refer both to
@@ -531,4 +539,3 @@ iir a0 a b inp =
       (\i o -> 1 / a0 * ( scalarProd b i
                         - scalarProd a o)
       )
-
