@@ -56,6 +56,8 @@ instance Sharable Literal
 
 instance Cumulative Literal where {-# SPECIALIZE instance Cumulative Literal #-}
 
+instance Typed Literal
+
 instance SizeProp (Literal :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (Literal :|| Type) #-}

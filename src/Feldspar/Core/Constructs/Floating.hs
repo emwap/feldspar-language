@@ -102,6 +102,8 @@ instance Sharable FLOATING where {-# SPECIALIZE instance Sharable FLOATING #-}
 
 instance Cumulative FLOATING where {-# SPECIALIZE instance Cumulative FLOATING #-}
 
+instance Typed FLOATING
+
 instance SizeProp (FLOATING :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (FLOATING :|| Type) #-}

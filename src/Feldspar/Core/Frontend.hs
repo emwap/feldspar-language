@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP  #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -8,9 +9,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE OverlappingInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ <= 708
+{-# LANGUAGE OverlappingInstances #-}
+#endif
 
 --
 -- Copyright (c) 2009-2011, ERICSSON AB
@@ -336,7 +340,7 @@ instance (P.Eq a, Show a) => Equal a
   where
     x ==== y = x === y
 
-instance (Show a, Arbitrary a, Equal b) => Equal (a -> b)
+instance {-# OVERLAPPING #-} (Show a, Arbitrary a, Equal b) => Equal (a -> b)
   where
     f ==== g = property (\x -> f x ==== g x)
 

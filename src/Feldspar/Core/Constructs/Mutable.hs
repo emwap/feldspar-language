@@ -85,6 +85,8 @@ instance Sharable (MONAD Mut) where {-# SPECIALIZE instance Sharable (MONAD Mut)
 
 instance Cumulative (MONAD Mut) where {-# SPECIALIZE instance Cumulative (MONAD Mut) #-}
 
+instance Typed (MONAD Mut)
+
 instance SizeProp (MONAD Mut)
   where
     {-# SPECIALIZE instance SizeProp (MONAD Mut) #-}

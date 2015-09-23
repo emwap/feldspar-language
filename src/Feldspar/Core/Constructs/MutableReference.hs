@@ -84,6 +84,8 @@ instance Sharable MutableReference where
 instance Cumulative MutableReference where
   {-# SPECIALIZE instance Cumulative MutableReference #-}
 
+instance Typed MutableReference
+
 instance SizeProp MutableReference
   where
     {-# SPECIALIZE instance SizeProp MutableReference #-}

@@ -39,6 +39,8 @@ instance Sharable REALFLOAT where {-# SPECIALIZE instance Sharable REALFLOAT #-}
 
 instance Cumulative REALFLOAT where {-# SPECIALIZE instance Cumulative REALFLOAT #-}
 
+instance Typed REALFLOAT
+
 instance SizeProp (REALFLOAT :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (REALFLOAT :|| Type) #-}

@@ -80,6 +80,8 @@ instance Sharable Logic where {-# SPECIALIZE instance Sharable Logic #-}
 
 instance Cumulative Logic where {-# SPECIALIZE instance Cumulative Logic #-}
 
+instance Typed Logic
+
 instance SizeProp (Logic :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (Logic :|| Type) #-}

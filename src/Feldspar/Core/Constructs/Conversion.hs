@@ -97,6 +97,8 @@ instance Sharable Conversion where {-# SPECIALIZE instance Sharable Conversion #
 
 instance Cumulative Conversion where {-# SPECIALIZE instance Cumulative Conversion #-}
 
+instance Typed Conversion
+
 instance SizeProp (Conversion :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (Conversion :|| Type) #-}

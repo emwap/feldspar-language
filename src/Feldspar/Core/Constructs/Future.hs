@@ -73,6 +73,8 @@ instance Sharable FUTURE
 
 instance Cumulative FUTURE where {-# SPECIALIZE instance Cumulative FUTURE #-}
 
+instance Typed FUTURE
+
 instance SizeProp (FUTURE :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (FUTURE :|| Type) #-}

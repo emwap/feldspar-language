@@ -37,10 +37,6 @@ instance Semantic ElementsFeat
     semantics EparFor         = Sem "parFor" eparFor
 
 instance Typed ElementsFeat
-  where
-    {-# SPECIALIZE instance Typed ElementsFeat #-}
-    {-# INLINABLE typeDictSym #-}
-    typeDictSym = const Nothing
 
 ematerialize :: Length -> Elements a -> [a]
 ematerialize l (Elements xs) = map snd xs'

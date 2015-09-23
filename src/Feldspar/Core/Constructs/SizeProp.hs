@@ -71,6 +71,8 @@ instance Sharable PropSize where {-# SPECIALIZE instance Sharable PropSize #-}
 
 instance Cumulative PropSize where {-# SPECIALIZE instance Cumulative PropSize #-}
 
+instance Typed PropSize
+
 instance AlphaEq dom dom dom env => AlphaEq PropSize PropSize dom env
   where
     {-# SPECIALIZE instance AlphaEq dom dom dom env =>

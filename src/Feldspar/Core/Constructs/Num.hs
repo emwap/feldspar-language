@@ -90,6 +90,8 @@ instance Sharable NUM where {-# SPECIALIZE instance Sharable NUM #-}
 
 instance Cumulative NUM where {-# SPECIALIZE instance Cumulative NUM #-}
 
+instance Typed NUM
+
 instance SizeProp (NUM :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (NUM :|| Type) #-}

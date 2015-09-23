@@ -83,6 +83,8 @@ instance Sharable COMPLEX where {-# SPECIALIZE instance Sharable COMPLEX #-}
 
 instance Cumulative COMPLEX where {-# SPECIALIZE instance Cumulative COMPLEX #-}
 
+instance Typed COMPLEX
+
 instance SizeProp (COMPLEX :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (COMPLEX :|| Type) #-}

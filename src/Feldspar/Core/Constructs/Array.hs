@@ -126,6 +126,8 @@ instance Sharable Array where {-# SPECIALIZE instance Sharable Array #-}
 
 instance Cumulative Array where {-# SPECIALIZE instance Cumulative Array #-}
 
+instance Typed Array
+
 instance SizeProp (Array :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (Array :|| Type) #-}

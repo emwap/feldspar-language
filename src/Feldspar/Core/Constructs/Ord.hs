@@ -86,6 +86,8 @@ instance Sharable ORD where {-# SPECIALIZE instance Sharable ORD #-}
 
 instance Cumulative ORD where {-# SPECIALIZE instance Cumulative ORD #-}
 
+instance Typed ORD
+
 instance SizeProp (ORD :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (ORD :|| Type) #-}

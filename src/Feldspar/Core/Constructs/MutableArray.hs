@@ -88,6 +88,8 @@ instance Sharable MutableArray where {-# SPECIALIZE instance Sharable MutableArr
 
 instance Cumulative MutableArray where {-# SPECIALIZE instance Cumulative MutableArray #-}
 
+instance Typed MutableArray
+
 instance SizeProp MutableArray
   where
     {-# SPECIALIZE instance SizeProp MutableArray #-}

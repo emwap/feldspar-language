@@ -70,6 +70,8 @@ instance Sharable FRACTIONAL where {-# SPECIALIZE instance Sharable FRACTIONAL #
 
 instance Cumulative FRACTIONAL where {-# SPECIALIZE instance Cumulative FRACTIONAL #-}
 
+instance Typed FRACTIONAL
+
 instance AlphaEq dom dom dom env => AlphaEq FRACTIONAL FRACTIONAL dom env
   where
     {-# SPECIALIZE instance AlphaEq dom dom dom env =>

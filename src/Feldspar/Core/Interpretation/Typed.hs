@@ -1,10 +1,10 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverlappingInstances #-}
 
 -- | Witness 'Type' constraints
 
@@ -15,7 +15,10 @@ module Feldspar.Core.Interpretation.Typed
 where
 
 import Language.Syntactic
-import Language.Syntactic.Constructs.Decoration
+import Language.Syntactic.Constructs.Condition  (Condition)
+import Language.Syntactic.Constructs.Decoration (Decor(..))
+import Language.Syntactic.Constructs.Identity   (Identity)
+import Language.Syntactic.Constructs.Binding    (Variable,Lambda,Let)
 
 import Feldspar.Core.Types (Type)
 
@@ -26,11 +29,6 @@ class Typed dom
     typeDictSym :: dom a -> Maybe (Dict (Type (DenResult a)))
     {-# INLINABLE typeDictSym #-}
     typeDictSym = const Nothing
-
-instance Typed (sub :|| Type) where
-  {-# SPECIALIZE instance Typed (sub :|| Type) #-}
-  {-# INLINABLE typeDictSym #-}
-  typeDictSym (C' _) = Just Dict
 
 instance Typed sub => Typed (sub :|| pred) where
   {-# SPECIALIZE instance (Typed sub) => Typed (sub :|| pred) #-}
@@ -58,10 +56,12 @@ instance (Typed sub) => Typed (Decor info sub) where
   {-# INLINABLE typeDictSym #-}
   typeDictSym (Decor _ s) = typeDictSym s
 
-instance Typed Empty where
-  {-# SPECIALIZE instance Typed Empty #-}
-instance Typed dom where
-  {-# SPECIALIZE instance Typed dom #-}
+instance Typed Empty
+instance Typed Condition
+instance Typed Identity
+instance Typed Variable
+instance Typed Lambda
+instance Typed Let
 
 -- | Extract a possible 'Type' constraint witness from an 'AST'
 typeDict :: Typed dom => ASTF dom a -> Maybe (Dict (Type a))

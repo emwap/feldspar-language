@@ -55,6 +55,8 @@ instance Sharable Tuple where {-# SPECIALIZE instance Sharable Tuple #-}
 
 instance Cumulative Tuple where {-# SPECIALIZE instance Cumulative Tuple #-}
 
+instance Typed Tuple
+
 instance SizeProp (Tuple :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (Tuple :|| Type) #-}
@@ -339,6 +341,8 @@ instance Sharable Select
     sharable = const False
 
 instance Cumulative Select where {-# SPECIALIZE instance Cumulative Select #-}
+
+instance Typed Select
 
 sel1Size :: (Sel1' a ~ b) => TypeRep a -> Size a -> Size b
 sel1Size Tup2Type{}  = $(proj 2 0)

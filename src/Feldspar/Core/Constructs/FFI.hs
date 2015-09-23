@@ -68,6 +68,8 @@ instance Sharable FFI where {-# SPECIALIZE instance Sharable FFI #-}
 
 instance Cumulative FFI where {-# SPECIALIZE instance Cumulative FFI #-}
 
+instance Typed FFI
+
 instance SizeProp (FFI :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (FFI :|| Type) #-}

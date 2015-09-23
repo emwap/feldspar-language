@@ -118,6 +118,7 @@ instance Monad m => EvalBind   (LoopM m) where
 
 instance Sharable   (LoopM m) where {-# SPECIALIZE instance Sharable (LoopM m) #-}
 instance Cumulative (LoopM m) where {-# SPECIALIZE instance Cumulative (LoopM m) #-}
+instance Typed (LoopM m)
 
 semanticInstances ''Loop
 
@@ -138,6 +139,8 @@ instance AlphaEq dom dom dom env => AlphaEq Loop Loop dom env
 instance Sharable Loop where {-# SPECIALIZE instance Sharable Loop #-}
 
 instance Cumulative Loop where {-# SPECIALIZE instance Cumulative Loop #-}
+
+instance Typed Loop
 
 instance SizeProp (LoopM m)
   where

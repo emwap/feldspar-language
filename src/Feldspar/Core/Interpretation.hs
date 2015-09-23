@@ -173,8 +173,7 @@ instance Sharable dom => Sharable (Decor Info dom)
     hoistOver = hoistOver . decorExpr
     {-# INLINABLE hoistOver #-}
 
-instance Sharable Empty where
-  {-# SPECIALIZE instance Sharable Empty #-}
+instance Sharable Empty
 
 
 
@@ -450,7 +449,6 @@ class Optimize feature dom
 
 instance Optimize Empty dom
   where
-    {-# SPECIALIZE instance Optimize Empty dom #-}
     constructFeatUnOpt = error "Not implemented: constructFeatUnOpt for Empty"
     sizePropEnv = error "Not implemented: sizePropEnv for Empty"
 
@@ -666,8 +664,7 @@ instance (Cumulative dom) => Cumulative (Decor Info dom) where
     {-# INLINABLE cumulativeInc #-}
     {-# INLINABLE cumulativeDec #-}
 
-instance Cumulative Empty where
-  {-# SPECIALIZE instance Cumulative Empty #-}
+instance Cumulative Empty
 
 -- | Extract sub-expressions for which the expression is (weak) monotonic
 -- increasing

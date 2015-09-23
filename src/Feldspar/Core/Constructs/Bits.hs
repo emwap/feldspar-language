@@ -165,6 +165,8 @@ instance Cumulative BITS where
         = [a]
     cumulativeDec _ _ = []
 
+instance Typed BITS
+
 instance SizeProp (BITS :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (BITS :|| Type) #-}

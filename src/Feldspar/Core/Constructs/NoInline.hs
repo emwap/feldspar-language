@@ -66,6 +66,8 @@ instance Sharable NoInline where {-# SPECIALIZE instance Sharable NoInline #-}
 
 instance Cumulative NoInline where {-# SPECIALIZE instance Cumulative NoInline #-}
 
+instance Typed NoInline
+
 instance SizeProp (NoInline :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (NoInline :|| Type) #-}

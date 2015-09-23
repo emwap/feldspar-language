@@ -67,6 +67,8 @@ instance Sharable Save where {-# SPECIALIZE instance Sharable Save #-}
 
 instance Cumulative Save where {-# SPECIALIZE instance Cumulative Save #-}
 
+instance Typed Save
+
 instance SizeProp (Save :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (Save :|| Type) #-}

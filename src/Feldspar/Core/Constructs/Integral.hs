@@ -95,6 +95,8 @@ instance Sharable INTEGRAL where {-# SPECIALIZE instance Sharable INTEGRAL #-}
 
 instance Cumulative INTEGRAL where {-# SPECIALIZE instance Cumulative INTEGRAL #-}
 
+instance Typed INTEGRAL
+
 instance SizeProp (INTEGRAL :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (INTEGRAL :|| Type) #-}

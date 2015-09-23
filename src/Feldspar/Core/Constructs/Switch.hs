@@ -42,6 +42,8 @@ instance Sharable Switch where {-# SPECIALIZE instance Sharable Switch #-}
 
 instance Cumulative Switch where {-# SPECIALIZE instance Cumulative Switch #-}
 
+instance Typed Switch
+
 instance SizeProp (Switch :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (Switch :|| Type) #-}

@@ -73,6 +73,8 @@ instance Sharable EQ where
 instance Cumulative EQ where
   {-# SPECIALIZE instance Cumulative EQ #-}
 
+instance Typed EQ
+
 instance SizeProp (EQ :|| Type)
   where
     {-# SPECIALIZE instance SizeProp (EQ :|| Type) #-}

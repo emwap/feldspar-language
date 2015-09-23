@@ -78,6 +78,7 @@ instance EvalBind Error where
 
 instance Sharable Error where {-# SPECIALIZE instance Sharable Error #-}
 instance Cumulative Error where {-# SPECIALIZE instance Cumulative Error #-}
+instance Typed Error
 
 instance SizeProp (Error :|| Type)
   where

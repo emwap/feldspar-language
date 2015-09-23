@@ -79,6 +79,7 @@ instance Sharable (ConditionM m) where
   {-# SPECIALIZE instance Sharable (ConditionM m) #-}
 instance Cumulative (ConditionM m) where
   {-# SPECIALIZE instance Cumulative (ConditionM m) #-}
+instance Typed (ConditionM m)
 
 instance AlphaEq dom dom dom env =>
     AlphaEq (ConditionM m) (ConditionM m) dom env

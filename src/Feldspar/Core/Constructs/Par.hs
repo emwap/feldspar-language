@@ -90,6 +90,10 @@ instance Cumulative ParFeature where {-# SPECIALIZE instance Cumulative ParFeatu
 
 instance Cumulative (MONAD Par) where {-# SPECIALIZE instance Cumulative (MONAD Par) #-}
 
+instance Typed ParFeature
+
+instance Typed (MONAD Par)
+
 instance SizeProp ParFeature
   where
     {-# SPECIALIZE instance SizeProp ParFeature #-}
