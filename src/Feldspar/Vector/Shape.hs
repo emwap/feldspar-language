@@ -3,14 +3,18 @@
 {-# LANGUAGE TypeFamilies      #-}
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ImplicitParams    #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+
+#if defined(MIN_VERSION_base) && MIN_VERSION_base(4,9,0)
+{-# LANGUAGE ImplicitParams    #-}
+#endif
+
 
 module Feldspar.Vector.Shape where
 
 import qualified Prelude as P
-#if defined(MIN_VERSION_base) && MIN_VERSION_base(4,7,0)
+#if defined(MIN_VERSION_base) && MIN_VERSION_base(4,9,0)
 import GHC.Stack
 #endif
 
@@ -99,7 +103,7 @@ shapeEq (sh1 :. i) (sh2 :. j) = i == j && shapeEq sh1 sh2
 class Shapely sh where
   zeroDim   :: Shape sh
   unitDim   :: Shape sh
-#if defined(MIN_VERSION_base) && MIN_VERSION_base(4,7,0)
+#if defined(MIN_VERSION_base) && MIN_VERSION_base(4,9,0)
   fakeShape :: (?cs :: CallStack) => Shape sh
 #else
   fakeShape :: Shape sh
@@ -125,7 +129,7 @@ instance Shapely sh => Shapely (sh :. Data Length) where
   {-# INLINABLE toShape #-}
   zeroDim   = zeroDim   :. 0
   unitDim   = unitDim   :. 1
-#if defined(MIN_VERSION_base) && MIN_VERSION_base(4,7,0)
+#if defined(MIN_VERSION_base) && MIN_VERSION_base(4,9,0)
   fakeShape = fakeShape :. P.error ("You shall not inspect the syntax tree!\n" P.++ showCallStack ?cs)
 #else
   fakeShape = fakeShape :. P.error ("You shall not inspect the syntax tree!")
