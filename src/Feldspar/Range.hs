@@ -40,7 +40,7 @@
 
 module Feldspar.Range where
 
-import Data.Bits
+import Data.Bits.Compat
 import Data.Int
 import Data.Word
 import Feldspar.Lattice
