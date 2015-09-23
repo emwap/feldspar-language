@@ -21,7 +21,7 @@ finiteBitSize = bitSize
 #endif
 
 #if !MIN_VERSION_base(4,8,0)
-countLeadingZeros :: Bits b => b -> Int
+countLeadingZeros :: (FiniteBits b) => b -> Int
 countLeadingZeros x = (w-1) - go (w-1)
   where
     go i | i < 0       = i -- no bit set
