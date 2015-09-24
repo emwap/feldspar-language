@@ -180,6 +180,9 @@ library
 
   ghc-options: -fcontext-stack=100
 
+  if impl(ghc<7.10.2)
+    ghc-options: -fno-specialise
+
 test-suite range
   type: exitcode-stdio-1.0
 
