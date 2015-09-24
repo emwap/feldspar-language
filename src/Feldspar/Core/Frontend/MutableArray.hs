@@ -40,6 +40,7 @@ import Control.Monad (zipWithM_)
 import Feldspar.Core.Types
 import Feldspar.Core.Constructs
 import Feldspar.Core.Constructs.MutableArray
+import Feldspar.Core.Frontend.Array
 import Feldspar.Core.Frontend.LoopM
 import Feldspar.Core.Frontend.Mutable
 import Feldspar.Core.Frontend.Literal (value)
@@ -56,11 +57,19 @@ newArr_ = sugarSymC NewArr_
 
 -- | Create a new 'Mutable' Array and initialize with elements from the
 -- list
-newListArr :: forall a. Type a => [Data a] -> M (Data (MArr a))
+newListArr :: Type a => [Data a] -> M (Data (MArr a))
 newListArr xs = do arr <- newArr_ (value $ genericLength xs)
                    zipWithM_ (setArr arr . value) [0..] xs
                    return arr
 {-# INLINABLE newListArr #-}
+
+thawArray :: Type a => Data [a] -> M (Data (MArr a))
+thawArray arr = do
+  let len = getLength arr
+  marr <- newArr_ len
+  forM len $ \ix -> setArr marr ix (getIx arr ix)
+  return marr
+{-# INLINABLE thawArray #-}
 
 -- | Extract the element at index
 getArr :: Type a => Data (MArr a) -> Data Index -> M (Data a)

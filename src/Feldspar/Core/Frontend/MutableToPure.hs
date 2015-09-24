@@ -33,7 +33,6 @@ import Language.Syntactic
 import Feldspar.Core.Types
 import Feldspar.Core.Constructs
 import Feldspar.Core.Constructs.MutableToPure
-import Feldspar.Core.Frontend.Array
 import Feldspar.Core.Frontend.LoopM
 import Feldspar.Core.Frontend.Mutable
 import Feldspar.Core.Frontend.MutableArray
@@ -50,12 +49,3 @@ runMutableArray = sugarSymC RunMutableArray
 freezeArray :: Type a => Data (MArr a) -> M (Data [a])
 freezeArray marr = withArray marr return
 {-# INLINABLE freezeArray #-}
-
-thawArray :: Type a => Data [a] -> M (Data (MArr a))
-thawArray arr = do
-  marr <- newArr_ (getLength arr)
-  forM (getLength arr) (\ix ->
-    setArr marr ix (getIx arr ix)
-   )
-  return marr
-{-# INLINABLE thawArray #-}
