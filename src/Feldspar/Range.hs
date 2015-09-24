@@ -103,11 +103,6 @@ negativeRange
   | isSigned (undefined::a) = Range minBound (-1)
   | otherwise               = emptyRange
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 708
-finiteBitSize :: (Bits b) => b -> Int
-finiteBitSize = bitSize
-#endif
-
 -- | A convenience function for defining range propagation.
 --   @handleSign propU propS@ chooses @propU@ for unsigned types and
 --   @propS@ for signed types.

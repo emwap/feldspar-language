@@ -6,6 +6,7 @@ module Data.Bits.Compat
 #if !MIN_VERSION_base(4,7,0)
   , FiniteBits
   , finiteBitSize
+  , zeroBits
 #endif
 #if !MIN_VERSION_base(4,8,0)
   , countLeadingZeros
@@ -19,6 +20,9 @@ type FiniteBits b = Bits b
 
 finiteBitSize :: (FiniteBits b) => b -> Int
 finiteBitSize = bitSize
+
+zeroBits :: (Bits a) => a
+zeroBits = clearBit (bit 0) 0
 #endif
 
 #if !MIN_VERSION_base(4,8,0)
