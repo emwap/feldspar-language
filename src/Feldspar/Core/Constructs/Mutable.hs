@@ -61,8 +61,7 @@ data Mutable a
 
 instance Semantic Mutable
   where
-    {-# SPECIALIZE instance Semantic Mutable #-}
-    {-# INLINABLE semantics #-}
+    {-# NOINLINE semantics #-}
     semantics Run = Sem "runMutable" unsafePerformIO
 
 instance Typed Mutable

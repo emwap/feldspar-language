@@ -380,6 +380,7 @@ evalBindEither a = unsafePerformIO $ do
     return $ case e of
         Left msg -> Left (show (msg :: SomeException))
         Right b  -> Right b
+{-# NOINLINE evalBindEither #-}
 
 -- | Environment for optimization
 type Opt = Reader Env

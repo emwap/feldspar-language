@@ -71,11 +71,13 @@ runMutableArrayEval m = unsafePerformIO $
                         do marr <- m
                            iarr <- unsafeFreeze marr
                            return (elems (iarr :: Array Integer a))
+{-# NOINLINE runMutableArrayEval #-}
 
 withArrayEval :: forall a b. MArr a -> ([a] -> Mut b) -> Mut b
 withArrayEval ma f
     = do a <- f (elems (unsafePerformIO $ freeze ma :: Array Integer a))
          C.evaluate a
+{-# NOINLINE withArrayEval #-}
 
 instance Typed MutableToPure
   where
