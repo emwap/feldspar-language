@@ -605,7 +605,7 @@ rangeXorUnsignedAccurate (Range a b) (Range c d) =
 
 -- |
 -- | Propagating range information through 'shiftLU'.
-rangeShiftLU :: (Bits a, Bounded a, FiniteBits a, Ord a, Integral b)
+rangeShiftLU :: (Bounded a, FiniteBits a, Ord a, Integral b)
              => Range a -> Range b -> Range a
 rangeShiftLU = handleSign rangeShiftLUUnsigned (\_ _ -> universal)
 -- TODO: improve accuracy
@@ -758,7 +758,7 @@ rangeLessAbs d r
 
 -- | Similar to 'rangeLessAbs' but replaces the expression
 --   @abs d \`rangeLess\` abs r@ instead.
-absRangeLessAbs :: (Bits a, Bounded a, Enum a, Eq a, FiniteBits a, Num a, Ord a)
+absRangeLessAbs :: (Bounded a, Enum a, Eq a, FiniteBits a, Num a, Ord a)
                 => Range a -> Range a -> Bool
 absRangeLessAbs d r
     | lowerBound d == minBound = False

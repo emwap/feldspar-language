@@ -105,15 +105,21 @@ instance (Lattice a, Lattice b) => Lattice (a :> b)
 -- | Target-dependent unsigned integers
 newtype WordN = WordN Word32
   deriving
-    ( Eq, Ord, Num, Enum, Ix, Real, Integral, Bits, FiniteBits, Bounded, Typeable
+    ( Eq, Ord, Num, Enum, Ix, Real, Integral, Bits, Bounded, Typeable
     , Arbitrary, Random, Storable, NFData, Default
+#if MIN_VERSION_base(4,7,0)
+    , FiniteBits
+#endif
     )
 
 -- | Target-dependent signed integers
 newtype IntN = IntN Int32
   deriving
-    ( Eq, Ord, Num, Enum, Ix, Real, Integral, Bits, FiniteBits, Bounded, Typeable
+    ( Eq, Ord, Num, Enum, Ix, Real, Integral, Bits, Bounded, Typeable
     , Arbitrary, Random, Storable, NFData, Default
+#if MIN_VERSION_base(4,7,0)
+    , FiniteBits
+#endif
     )
 
 instance Show WordN
