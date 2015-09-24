@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Data.Bits.Compat
   ( module Base
