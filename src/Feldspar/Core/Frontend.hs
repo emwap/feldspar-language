@@ -315,7 +315,7 @@ resugar = Syntactic.resugar
 -- * QuickCheck
 --------------------------------------------------------------------------------
 
-instance (Type a, Arbitrary a) => Arbitrary (Data a)
+instance {-# OVERLAPPABLE #-} (Type a, Arbitrary a) => Arbitrary (Data a)
   where
     {-# SPECIALIZE instance (Type a, Arbitrary a) => Arbitrary (Data a) #-}
     {-# INLINABLE arbitrary #-}
